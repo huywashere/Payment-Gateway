@@ -5,20 +5,21 @@
   --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Mercury.com Obsidian & Champagne Gold + Adyen.com Electric Green */
-  --bg-obsidian: #08080a;
-  --bg-elevated: #0f1015;
-  --bg-surface: #14151e;
-  --bg-card: rgba(18, 19, 26, 0.75);
-  --bg-card-hover: rgba(26, 27, 38, 0.85);
+  /* Exact Adyen.com Midnight Navy & Electric Green */
+  --bg-adyen-navy: #00112c;
+  --bg-obsidian: #00112c;
+  --bg-elevated: #031533;
+  --bg-surface: #061b3d;
+  --bg-card: rgba(4, 19, 40, 0.85);
+  --bg-card-hover: rgba(9, 27, 53, 0.95);
 
-  --border-frosted: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-focus: rgba(197, 168, 128, 0.4);
+  --border-frosted: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-focus: rgba(10, 191, 83, 0.5);
 
-  --text-primary: #f5f5f7;
-  --text-secondary: #9ca3af;
-  --text-dim: #6b7280;
+  --text-primary: #ffffff;
+  --text-secondary: #8fa0be;
+  --text-dim: #64748b;
 
   /* Mercury Signature Warm Champagne Gold */
   --mercury-gold: #c5a880;
@@ -30,13 +31,13 @@
   /* Adyen Signature Electric Green */
   --adyen-green: #0abf53;
   --adyen-green-neon: #00ff84;
-  --adyen-green-glow: rgba(10, 191, 83, 0.25);
-  --adyen-green-subtle: rgba(10, 191, 83, 0.12);
+  --adyen-green-glow: rgba(10, 191, 83, 0.35);
+  --adyen-green-subtle: rgba(10, 191, 83, 0.15);
 
   --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-full: 9999px;
 }
 
@@ -103,6 +104,44 @@ a {
 .nav-link-active {
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.btn-adyen-cta {
+  background-color: #0abf53;
+  color: #00112c;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 10px 22px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.btn-adyen-cta:hover {
+  background-color: #00ff84;
+}
+
+.btn-adyen-newsletter {
+  background: #192841;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-adyen-newsletter:hover {
+  background: #223759;
 }
 
 button {
