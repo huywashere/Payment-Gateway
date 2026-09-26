@@ -25,7 +25,7 @@ import {
 
 import { BankLogo } from '@/components/BankLogos';
 import { VisaIcon, MastercardIcon, VietQrBadge, AppiBotAvatar } from '@/components/PaymentIcons';
-import { AdyenInteractiveShowcase } from '@/components/AdyenShowcase';
+import { AdyenMoneyMovementSection, AdyenPlatformsSection } from '@/components/AdyenShowcase';
 
 const SUPPORTED_BANKS = [
   'ACB',
@@ -631,11 +631,14 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 3. SECTION MÀU XANH: ADYEN MIDNIGHT NAVY INTERACTIVE 3D SECTION (#00112c) */}
+      {/* 3. PHẦN 1: QUẢ CẦU 3D & LUÂN CHUYỂN DÒNG TIỀN (Midnight Navy #00112c)      */}
       {/* ========================================================================= */}
-      <div style={{ backgroundColor: '#00112c', borderTop: '1px solid rgba(255, 255, 255, 0.08)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-        <AdyenInteractiveShowcase />
-      </div>
+      <AdyenMoneyMovementSection />
+
+      {/* ========================================================================= */}
+      {/* 4. PHẦN 2: KIẾN TRÚC XẾP TẦNG 3D & NỀN TẢNG DOANH NGHIỆP (Clean White)   */}
+      {/* ========================================================================= */}
+      <AdyenPlatformsSection />
 
       {/* ========================================================================= */}
       {/* 4. SECTION SÁNG: HẠ TẦNG KỸ THUẬT & DEVELOPER TERMINAL (#f6f8fb)          */}
