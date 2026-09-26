@@ -496,3 +496,17 @@ h1, h2, h3, h4, .font-heading {
 ::-webkit-scrollbar-thumb:hover {
   background: #393b4f;
 }
+
+.hover-green-text {
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.hover-green-text:hover {
+  color: var(--adyen-green-neon) !important;
+}
+
+.hover-green-text:hover svg {
+  transform: translateX(3px);
+  color: var(--adyen-green-neon) !important;
+  transition: transform 0.15s ease;
+}
