@@ -144,6 +144,62 @@ a {
   background: #223759;
 }
 
+/* Infinite Logo Marquee */
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee-container {
+  overflow: hidden;
+  display: flex;
+  user-select: none;
+  width: 100%;
+  position: relative;
+}
+
+.marquee-track {
+  display: flex;
+  gap: 56px;
+  align-items: center;
+  flex-shrink: 0;
+  animation: marqueeScroll 30s linear infinite;
+}
+
+.marquee-container:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Alternating White & Light Section Styles */
+.section-white {
+  background-color: #ffffff;
+  color: #00112c;
+  padding: 100px 32px;
+  position: relative;
+}
+
+.section-light {
+  background-color: #f6f8fb;
+  color: #00112c;
+  padding: 100px 32px;
+  position: relative;
+}
+
+.card-white {
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 17, 44, 0.08);
+  border-radius: 14px;
+  padding: 36px 32px;
+  box-shadow: 0 4px 20px rgba(0, 17, 44, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-white:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(0, 17, 44, 0.08);
+  border-color: rgba(10, 191, 83, 0.4);
+}
+
 button {
   font-family: inherit;
   cursor: pointer;
