@@ -53,6 +53,15 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
 
+info:
+  app:
+    name: ${spring.application.name}
+    version: "@project.version@"
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} level=%-5level service=${spring.application.name} request_id=%X{requestId:-none} logger=%logger{36} message=%msg%n"
+
 # Actuator Observability
 management:
   endpoints:
@@ -64,3 +73,10 @@ management:
       show-details: never
       probes:
         enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${SPRING_PROFILES_ACTIVE:local}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true

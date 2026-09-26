@@ -1,0 +1,88 @@
+groups:
+  - name: payment-gateway-availability
+    rules:
+      - alert: PaymentGatewayBackendDown
+        expr: up{job="backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend-core
+        annotations:
+          summary: Payment gateway backend metrics endpoint is unavailable
+          description: Prometheus has been unable to scrape {{ $labels.instance }} for more than one minute.
+
+      - alert: PaymentGatewayPortalDown
+        expr: probe_success{job="blackbox-http",instance="http://frontend:3000/"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: frontend-portal
+        annotations:
+          summary: Payment gateway portal is unavailable
+          description: The frontend HTTP probe has failed for more than one minute.
+
+      - alert: PaymentGatewayHealthProbeDown
+        expr: probe_success{job="blackbox-http",instance="http://backend:9090/actuator/health"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend-core
+        annotations:
+          summary: Backend health endpoint reports unavailable
+          description: The backend health probe has failed for more than one minute.
+
+  - name: payment-gateway-slo
+    rules:
+      - alert: PaymentGatewayHighErrorRate
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="backend",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="backend"}[5m])), 0.001)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: backend-core
+        annotations:
+          summary: Backend HTTP 5xx rate is above 5 percent
+          description: More than 5 percent of backend requests have failed during the last five minutes.
+
+      - alert: PaymentGatewayHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_server_requests_seconds_bucket{job="backend"}[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          service: backend-core
+        annotations:
+          summary: Backend p95 latency is above one second
+          description: The p95 backend response time has remained above one second for ten minutes.
+
+      - alert: PaymentGatewayDatabasePoolSaturated
+        expr: hikaricp_connections_pending{job="backend"} > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: postgres
+        annotations:
+          summary: Database connection pool has pending requests
+          description: Requests have waited for a database connection for more than five minutes.
+
+      - alert: PaymentGatewayHighJvmHeap
+        expr: |
+          (
+            sum(jvm_memory_used_bytes{job="backend",area="heap"})
+            /
+            clamp_min(sum(jvm_memory_max_bytes{job="backend",area="heap"}), 1)
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          service: backend-core
+        annotations:
+          summary: Backend JVM heap usage is above 85 percent
+          description: JVM heap usage has remained above 85 percent for ten minutes.

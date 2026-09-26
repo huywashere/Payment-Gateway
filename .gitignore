@@ -18,6 +18,7 @@ out/
 infra/environments/.env.dev
 infra/environments/.env.test
 infra/environments/.env.production
+infra/environments/.env.observability
 .env*.local
 *.pem
 

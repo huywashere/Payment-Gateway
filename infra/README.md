@@ -30,6 +30,46 @@ docker compose -f infra/compose/compose.test.yml up -d
 
 The test stack uses temporary storage and separate host ports, so it cannot overwrite development data.
 
+## Observability stack
+
+Copy the observability environment template and change the Grafana administrator password:
+
+```powershell
+Copy-Item infra/environments/.env.observability.example infra/environments/.env.observability
+
+docker compose `
+  --env-file infra/environments/.env.dev `
+  --env-file infra/environments/.env.observability `
+  -f infra/compose/compose.dev.yml `
+  -f infra/compose/compose.observability.yml `
+  up -d --build
+```
+
+Endpoints:
+
+- Grafana: `http://localhost:3001`
+- Prometheus: `http://localhost:9091`
+- Alertmanager: `http://localhost:9093`
+
+Prometheus scrapes the backend management port at `backend:9090`; this port is deliberately not published to the host. Blackbox Exporter probes the portal and backend health endpoint. Grafana is provisioned with Prometheus and Loki datasources plus the **Payment Gateway Operations** dashboard.
+
+Grafana Alloy reads container logs through the read-only Docker socket and forwards only Compose projects matching `payment-gateway.*` to Loki. Docker socket access is appropriate for this local single-host stack; production should run a node-level collector with the minimum platform-specific permissions.
+
+Alertmanager stores, groups, inhibits, and displays alerts locally. Its default receiver intentionally sends no external notification. Configure email, PagerDuty, Slack, or a webhook through a secret-managed production configuration before relying on it for on-call notification.
+
+Stop the full stack without deleting persistent data:
+
+```powershell
+docker compose `
+  --env-file infra/environments/.env.dev `
+  --env-file infra/environments/.env.observability `
+  -f infra/compose/compose.dev.yml `
+  -f infra/compose/compose.observability.yml `
+  down
+```
+
 ## Production configuration
 
 Use the Spring profile `production`. Every database, broker, cache, vault, origin, and portal secret in that profile is required and has no development fallback. The `.env.production.example` file is a schema only; real values belong in a managed secret store and must never be committed.
+
+The backend production management server listens on port `9090` and exposes only health, info, and Prometheus endpoints. Keep that port on a private monitoring network; never publish it directly to the internet.

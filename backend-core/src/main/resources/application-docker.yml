@@ -31,6 +31,8 @@ gateway:
     allowed-origins: ${GATEWAY_ALLOWED_ORIGINS}
 
 management:
+  server:
+    port: 9090
   endpoints:
     web:
       exposure:

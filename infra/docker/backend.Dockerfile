@@ -17,7 +17,7 @@ WORKDIR /app
 COPY --from=builder --chown=gateway:gateway /workspace/backend-core/target/*.jar /app/app.jar
 
 USER gateway
-EXPOSE 8080
+EXPOSE 8080 9090
 
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom"
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

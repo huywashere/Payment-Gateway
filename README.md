@@ -37,12 +37,14 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
 
 | Thành Phần | Công Nghệ & Phiên Bản |
 | :--- | :--- |
-| **Backend Core** | Java 23 + Spring Boot 3.3.4 (Virtual Threads / Project Loom) |
+| **Backend Core** | Java 21 + Spring Boot 3.3.4 (Virtual Threads / Project Loom) |
 | **Frontend Portal** | Next.js 16 (App Router) + TypeScript + Vanilla CSS + Prisma ORM 6 |
 | **Database** | PostgreSQL 16 (Flyway Database Migration, JSONB, UUID v4) |
 | **Distributed Cache & Lock** | Redis 7 + Redisson 3.34 |
 | **Message Broker** | RabbitMQ 3.13 (AMQP + Management UI) |
 | **Containerization** | Docker & Docker Compose |
+| **Observability** | Prometheus + Grafana + Loki + Grafana Alloy + Alertmanager |
+| **CI/CD & Security** | GitHub Actions + CodeQL + Trivy + GHCR |
 
 ---
 
@@ -64,6 +66,25 @@ docker compose --env-file infra/environments/.env.dev -f infra/compose/compose.d
 - RabbitMQ Management: `http://localhost:15672`
 
 Chi tiết cấu trúc container, mạng nội bộ và test dependencies nằm trong [`infra/README.md`](infra/README.md).
+
+### Khởi động kèm monitoring và centralized logging
+
+```powershell
+Copy-Item infra/environments/.env.observability.example infra/environments/.env.observability
+
+docker compose `
+  --env-file infra/environments/.env.dev `
+  --env-file infra/environments/.env.observability `
+  -f infra/compose/compose.dev.yml `
+  -f infra/compose/compose.observability.yml `
+  up -d --build
+```
+
+- Grafana: `http://localhost:3001`
+- Prometheus: `http://localhost:9091`
+- Alertmanager: `http://localhost:9093`
+
+Dashboard **Payment Gateway Operations** và hai datasource Prometheus/Loki được provision tự động.
 
 ### 2. Chạy ứng dụng trực tiếp khi phát triển
 
@@ -100,6 +121,14 @@ GATEWAY_ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 Spring Boot mặc định dùng profile `local`. Container development dùng profile `docker`; production phải dùng profile `production`. Profile production không có fallback cho database, Redis, RabbitMQ, vault key hoặc allowed origins và sẽ từ chối khởi động nếu thiếu cấu hình bắt buộc. Không sử dụng file `.env.production.example` để lưu secret thật; secret production phải đến từ secret manager của môi trường triển khai.
+
+---
+
+## CI/CD và vận hành
+
+Mỗi pull request chạy Maven test với dependencies thật, frontend lint/build, Docker Compose validation, image build, dependency review, Trivy image scan và CodeQL. Trivy đưa toàn bộ cảnh báo `HIGH`/`CRITICAL` lên GitHub Security và chặn phát hành khi còn lỗ hổng `CRITICAL` đã có bản vá. Commit trên `main` vượt toàn bộ quality gate sẽ phát hành hai image lên GitHub Container Registry với tag `latest`, `sha-<commit>`, SBOM và provenance attestation.
+
+Runbook xử lý sự cố và ý nghĩa cảnh báo nằm trong [`docs/operations-runbook.md`](docs/operations-runbook.md).
 
 ---
 
