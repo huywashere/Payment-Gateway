@@ -1,29 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
   --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* ApiPay exact dark palette */
-  --bg-black: #09090b;
-  --bg-elevated: #111113;
-  --bg-card: rgba(18, 18, 20, 0.85);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  /* Mercury.com Obsidian & Champagne Gold + Adyen.com Electric Green */
+  --bg-obsidian: #08080a;
+  --bg-elevated: #0f1015;
+  --bg-surface: #14151e;
+  --bg-card: rgba(18, 19, 26, 0.75);
+  --bg-card-hover: rgba(26, 27, 38, 0.85);
 
-  --text-primary: #ffffff;
-  --text-secondary: #a1a1aa;
-  --text-dim: #71717a;
+  --border-frosted: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-focus: rgba(197, 168, 128, 0.4);
 
-  --accent-cyan: #06b6d4;
-  --accent-green: #10b981;
-  --accent-emerald: #059669;
-  --accent-blue: #3b82f6;
+  --text-primary: #f5f5f7;
+  --text-secondary: #9ca3af;
+  --text-dim: #6b7280;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  /* Mercury Signature Warm Champagne Gold */
+  --mercury-gold: #c5a880;
+  --mercury-gold-light: #e8d7c0;
+  --mercury-gold-dark: #9e7f52;
+  --mercury-gold-glow: rgba(197, 168, 128, 0.22);
+  --gold-gradient: linear-gradient(135deg, #c5a880 0%, #faecd7 50%, #9e7f52 100%);
+
+  /* Adyen Signature Electric Green */
+  --adyen-green: #0abf53;
+  --adyen-green-neon: #00ff84;
+  --adyen-green-glow: rgba(10, 191, 83, 0.25);
+  --adyen-green-subtle: rgba(10, 191, 83, 0.12);
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
   --radius-full: 9999px;
 }
 
@@ -35,43 +48,61 @@
 
 body {
   font-family: var(--font-body);
-  background-color: var(--bg-black);
+  background-color: var(--bg-obsidian);
   color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
   overflow-x: hidden;
   position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Isometric geometric wireframe background like apipay.vn */
-.pattern-grid {
+/* Ambient Backdrops (Mercury Warm Bronze & Adyen FinTech Deep Space) */
+.ambient-glow-top {
+  position: fixed;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1100px;
+  height: 520px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(197, 168, 128, 0.12) 0%, rgba(10, 191, 83, 0.05) 45%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(40px);
+}
+
+.ambient-grid {
   position: fixed;
   inset: 0;
   pointer-events: none;
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 25%, black 40%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 25%, black 40%, transparent 100%);
-  z-index: 0;
-}
-
-.hero-glow {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 900px;
-  height: 480px;
-  background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.12) 0%, rgba(6, 182, 212, 0.06) 40%, transparent 70%);
-  pointer-events: none;
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 25%, black 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 25%, black 40%, transparent 100%);
   z-index: 0;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.nav-link {
+  color: var(--text-secondary);
+  transition: color 0.15s ease;
+  font-weight: 500;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+}
+
+.nav-link-active {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 button {
@@ -81,151 +112,292 @@ button {
   background: none;
 }
 
-/* Heading font */
 h1, h2, h3, h4, .font-heading {
   font-family: var(--font-sans);
 }
 
-/* ApiPay Typography blinking cursor */
-@keyframes custom-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.animate-blink {
-  animation: custom-blink 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Primary CTA Button (Solid White like ApiPay) */
-.btn-apipay-white {
-  background-color: #ffffff;
-  color: #09090b;
-  font-weight: 600;
-  font-size: 0.92rem;
-  padding: 10px 22px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.15s ease;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.12);
-}
-
-.btn-apipay-white:hover {
-  background-color: #f4f4f5;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.2);
-}
-
-.btn-apipay-dark {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  font-weight: 500;
-  font-size: 0.92rem;
-  padding: 10px 22px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.15s ease;
-}
-
-.btn-apipay-dark:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
-/* Terminal Container Styling */
-.terminal-window {
-  background: #0d0e12;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-  font-family: var(--font-mono);
-}
-
-.terminal-header {
-  background: #14151b;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: #71717a;
-}
-
-.traffic-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+/* Mercury Gold Gradient Text */
+.text-gold-gradient {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   display: inline-block;
 }
 
-/* Bank Logo Capsule Pill */
-.bank-pill {
-  background: #ffffff;
-  padding: 5px 14px;
-  border-radius: 8px;
+/* Adyen Electric Green Pulse Dot */
+.adyen-pulse-dot {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 38px;
-  min-width: 80px;
-  font-weight: 800;
-  font-size: 0.85rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--adyen-green);
 }
 
-.bank-pill:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.12);
+.adyen-pulse-dot::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background-color: var(--adyen-green);
+  opacity: 0.6;
+  animation: adyenPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-/* Floating Chatbot Widget */
-.floating-bot {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: rgba(18, 18, 20, 0.85);
+@keyframes adyenPing {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Buttons: Mercury Warm Gold, Adyen Electric Green, Frosted Glass */
+.btn-mercury-gold {
+  background: var(--gold-gradient);
+  color: #08080a;
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 11px 24px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px var(--mercury-gold-glow);
+  letter-spacing: -0.01em;
+}
+
+.btn-mercury-gold:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(197, 168, 128, 0.35);
+  filter: brightness(1.05);
+}
+
+.btn-adyen-green {
+  background-color: var(--adyen-green);
+  color: #050608;
+  font-weight: 700;
+  font-size: 0.92rem;
+  padding: 11px 24px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px var(--adyen-green-glow);
+}
+
+.btn-adyen-green:hover {
+  background-color: var(--adyen-green-neon);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(10, 191, 83, 0.4);
+}
+
+.btn-glass {
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f7;
+  border: 1px solid var(--border-frosted);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-  padding: 8px 16px;
+  -webkit-backdrop-filter: blur(12px);
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 11px 22px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Mercury 3D Metallic Corporate Card */
+.mercury-card-container {
+  perspective: 1200px;
+}
+
+.mercury-titanium-card {
+  width: 380px;
+  height: 240px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #161720 0%, #0d0e14 45%, #181924 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 24px 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 
+    0 25px 60px -15px rgba(0, 0, 0, 0.9),
+    0 0 40px rgba(197, 168, 128, 0.1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+}
+
+.mercury-titanium-card:hover {
+  transform: translateY(-4px) rotateX(4deg) rotateY(-3deg);
+  box-shadow: 
+    0 35px 70px -15px rgba(0, 0, 0, 0.95),
+    0 0 50px rgba(197, 168, 128, 0.18),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+/* Card Metallic Dynamic Light Sheen */
+.mercury-titanium-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 35%, rgba(197, 168, 128, 0.15) 55%, rgba(255, 255, 255, 0.05) 100%);
+  pointer-events: none;
+}
+
+/* Card Realistic Gold Microchip */
+.card-chip {
+  width: 44px;
+  height: 34px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #d4b483 0%, #aa8449 50%, #e0c8a0 100%);
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.card-chip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.card-chip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Bento Grid System (Mercury.com Architecture) */
+.bento-container {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+
+.bento-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-frosted);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bento-card:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+}
+
+.bento-card-glow {
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  opacity: 0.15;
+  transition: opacity 0.3s ease;
+}
+
+.bento-card:hover .bento-card-glow {
+  opacity: 0.28;
+}
+
+/* Live Adyen Metric Capsule */
+.metric-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-frosted);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* Bank Pill Capsule (Mercury Frosted Style) */
+.bank-pill-mercury {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.bank-pill-mercury:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(197, 168, 128, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Mercury Code Console Window */
+.mercury-console {
+  background: #0b0c11;
+  border: 1px solid var(--border-frosted);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+  font-family: var(--font-mono);
+}
+
+.mercury-console-header {
+  background: #111218;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 12px 18px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  cursor: pointer;
-  z-index: 100;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.floating-bot:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.3);
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-dim);
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: var(--bg-obsidian);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 4px;
+  background: #252633;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: #393b4f;
 }

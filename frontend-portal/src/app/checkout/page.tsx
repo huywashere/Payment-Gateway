@@ -14,6 +14,7 @@ import {
   Copy,
   Check,
   Clock,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { VisaIcon, MastercardIcon, VietQrBadge } from '@/components/PaymentIcons';
@@ -46,7 +47,6 @@ function CheckoutContent() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  // Load session from backend if valid clientSecret
   useEffect(() => {
     if (session) {
       fetch(`http://localhost:8080/v1/checkout/${session}`)
@@ -57,13 +57,11 @@ function CheckoutContent() {
             if (data.description) setDescription(data.description);
           }
         })
-        .catch(() => {
-          // Use default demo amount if offline
-        });
+        .catch(() => {});
     }
   }, [session]);
 
-  const handleQuickFill = (cardType: 'success' | 'insufficient' | 'declined' | '3ds') => {
+  const handleQuickFill = (cardType: 'success' | 'insufficient' | 'declined') => {
     setErrorMessage(null);
     if (cardType === 'success') {
       setCardNumber('4242 4242 4242 4242');
@@ -80,11 +78,6 @@ function CheckoutContent() {
       setHolderName('TRAN VAN C (DECLINED)');
       setExpDate('05/26');
       setCvc('789');
-    } else if (cardType === '3ds') {
-      setCardNumber('4000 0000 0000 3000');
-      setHolderName('HOANG VAN D (3D-SECURE)');
-      setExpDate('11/29');
-      setCvc('321');
     }
   };
 
@@ -126,20 +119,22 @@ function CheckoutContent() {
   };
 
   return (
-    <div style={{ maxWidth: '1080px', margin: '0 auto', padding: '40px 24px' }}>
+    <div style={{ maxWidth: '1120px', margin: '0 auto', padding: '40px 24px 80px 24px' }}>
       {/* Top back link */}
       <div style={{ marginBottom: '28px' }}>
         <Link
-          href="/"
+          href="/dashboard"
           id="link-back-dashboard"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            color: 'var(--text-muted)',
-            fontSize: '0.9rem',
-            transition: 'color 0.2s ease',
+            color: 'var(--text-secondary)',
+            fontSize: '0.88rem',
+            transition: 'color 0.15s ease',
           }}
+          onMouseOver={(e) => (e.currentTarget.style.color = '#f5f5f7')}
+          onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
         >
           <ArrowLeft size={16} /> Quay lại Merchant Dashboard
         </Link>
@@ -147,65 +142,70 @@ function CheckoutContent() {
 
       {paymentSuccess ? (
         <div
-          className="glass-card animate-fade-in"
           style={{
-            maxWidth: '560px',
+            maxWidth: '580px',
             margin: '40px auto',
-            padding: '48px 36px',
+            padding: '48px 40px',
             textAlign: 'center',
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(15, 23, 42, 0.9) 100%)',
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(14, 15, 22, 0.95) 100%)',
+            border: '1px solid rgba(10, 191, 83, 0.4)',
+            borderRadius: '24px',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8)',
           }}
         >
           <div
             style={{
-              width: '72px',
-              height: '72px',
+              width: '76px',
+              height: '76px',
               borderRadius: '50%',
-              background: 'rgba(16, 185, 129, 0.2)',
-              color: '#10b981',
+              background: 'rgba(10, 191, 83, 0.15)',
+              color: 'var(--adyen-green-neon)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 24px auto',
-              boxShadow: '0 0 30px rgba(16, 185, 129, 0.4)',
+              boxShadow: '0 0 30px rgba(10, 191, 83, 0.3)',
             }}
           >
-            <CheckCircle2 size={42} />
+            <CheckCircle2 size={44} />
           </div>
 
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px' }}>
-            Thanh toán Thành công!
+          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#f5f5f7', marginBottom: '8px', letterSpacing: '-0.02em' }}>
+            Thanh Toán Thành Công!
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '28px' }}>
-            Giao dịch đã được xác thực an toàn qua Mock Bank và tự động hạch toán vào Sổ cái kép.
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '32px' }}>
+            Giao dịch đã được hạch toán an toàn vào Sổ Cái Kép và sinh sự kiện Outbox qua RabbitMQ.
           </p>
 
           <div
             style={{
-              background: 'rgba(0, 0, 0, 0.35)',
-              padding: '20px',
-              borderRadius: '12px',
+              background: 'rgba(8, 8, 10, 0.7)',
+              padding: '22px',
+              borderRadius: '16px',
               marginBottom: '32px',
               textAlign: 'left',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
+              border: '1px solid var(--border-frosted)',
+              fontSize: '0.9rem',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ color: 'var(--text-dim)' }}>Số tiền:</span>
-              <span style={{ fontWeight: 700, color: '#f8fafc' }}>{amount.toLocaleString('vi-VN')} ₫</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>Số tiền thanh toán:</span>
+              <span style={{ fontWeight: 800, color: 'var(--mercury-gold)' }}>{amount.toLocaleString('vi-VN')} ₫</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ color: 'var(--text-dim)' }}>Phương thức:</span>
-              <span style={{ fontWeight: 600, color: '#a5b4fc' }}>VISA (Đã Tokenize qua Vault)</span>
+              <span style={{ fontWeight: 600, color: '#f5f5f7' }}>
+                {paymentMethod === 'card' ? 'Thẻ Quốc tế (Mã hóa PCI Vault)' : 'VietQR Napas 24/7'}
+              </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-dim)' }}>Bút toán Sổ cái:</span>
-              <span style={{ color: '#10b981', fontWeight: 600 }}>Tự động ghi Nợ/Có đối xứng</span>
+              <span style={{ color: 'var(--text-dim)' }}>Hạch toán Sổ cái:</span>
+              <span style={{ color: 'var(--adyen-green-neon)', fontWeight: 600 }}>Tự động ghi Nợ/Có tức thì</span>
             </div>
           </div>
 
-          <Link href="/" className="btn-primary" style={{ width: '100%' }}>
-            Về Dashboard xem số dư mới
+          <Link href="/dashboard" className="btn-mercury-gold" style={{ width: '100%', padding: '14px', fontSize: '0.95rem' }}>
+            Về Merchant Dashboard xem Số dư mới
           </Link>
         </div>
       ) : (
@@ -216,46 +216,66 @@ function CheckoutContent() {
             gap: '32px',
           }}
         >
-          {/* Left Column: Order Summary */}
-          <div className="glass-card" style={{ padding: '36px', height: 'fit-content' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontSize: '0.82rem', fontWeight: 700, marginBottom: '20px' }}>
+          {/* Left Column: Order Summary & Quick Test Card Badges */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-frosted)',
+              borderRadius: '20px',
+              padding: '36px',
+              height: 'fit-content',
+              backdropFilter: 'blur(16px)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--adyen-green-neon)', fontSize: '0.8rem', fontWeight: 700, marginBottom: '20px' }}>
               <ShieldCheck size={16} />
-              CỔNG THANH TOÁN BẢO MẬT 256-BIT
+              <span>ADYEN UNIFIED COMMERCE SECURED</span>
             </div>
 
-            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Số tiền cần thanh toán</span>
-            <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.02em', margin: '4px 0 16px 0', color: '#ffffff' }}>
+            <span style={{ fontSize: '0.86rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
+              SỐ TIỀN CẦN THANH TOÁN
+            </span>
+            <div
+              style={{
+                fontSize: '2.6rem',
+                fontWeight: 800,
+                letterSpacing: '-0.03em',
+                margin: '6px 0 16px 0',
+                color: 'var(--text-primary)',
+                fontFamily: 'var(--font-sans)',
+              }}
+            >
               {amount.toLocaleString('vi-VN')} ₫
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '20px', marginTop: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div style={{ borderTop: '1px solid var(--border-frosted)', paddingTop: '20px', marginTop: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '0.9rem' }}>
                 <span style={{ color: 'var(--text-dim)' }}>Đơn hàng</span>
-                <span style={{ fontWeight: 600, color: '#f8fafc' }}>{description}</span>
+                <span style={{ fontWeight: 600, color: '#f5f5f7' }}>{description}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <span style={{ color: 'var(--text-dim)' }}>Người bán</span>
-                <span style={{ fontWeight: 600, color: '#f8fafc' }}>TechStore Vietnam</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '0.9rem' }}>
+                <span style={{ color: 'var(--text-dim)' }}>Doanh nghiệp</span>
+                <span style={{ fontWeight: 600, color: '#f5f5f7' }}>TechStore Vietnam Corp</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                 <span style={{ color: 'var(--text-dim)' }}>Tiêu chuẩn</span>
-                <span style={{ fontWeight: 600, color: '#a5b4fc' }}>PCI-DSS Level 1 Encrypted</span>
+                <span style={{ fontWeight: 600, color: 'var(--mercury-gold)' }}>PCI-DSS Level 1 & AES-256</span>
               </div>
             </div>
 
-            {/* Quick Test Cards Palette */}
+            {/* Quick Test Cards Palette (Adyen Sandbox Presets) */}
             <div
               style={{
                 marginTop: '32px',
-                padding: '18px',
-                background: 'rgba(99, 102, 241, 0.08)',
-                borderRadius: '12px',
-                border: '1px solid rgba(99, 102, 241, 0.2)',
+                padding: '20px',
+                background: 'rgba(15, 16, 23, 0.85)',
+                borderRadius: '14px',
+                border: '1px solid rgba(197, 168, 128, 0.25)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#a5b4fc', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: 'var(--mercury-gold)', marginBottom: '12px' }}>
                 <Sparkles size={14} />
-                BẢNG THẺ TEST NHANH (1-CLICK)
+                <span>BẢNG THẺ TEST NHANH (1-CLICK FILL)</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <button
@@ -263,14 +283,16 @@ function CheckoutContent() {
                   id="btn-test-card-success"
                   onClick={() => handleQuickFill('success')}
                   style={{
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    color: '#10b981',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
+                    background: 'rgba(10, 191, 83, 0.12)',
+                    color: 'var(--adyen-green-neon)',
+                    border: '1px solid rgba(10, 191, 83, 0.3)',
+                    padding: '9px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.82rem',
                     fontWeight: 600,
                     textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
                   }}
                 >
                   🟢 Thẻ Thành công (4242 4242...)
@@ -280,14 +302,15 @@ function CheckoutContent() {
                   id="btn-test-card-insufficient"
                   onClick={() => handleQuickFill('insufficient')}
                   style={{
-                    background: 'rgba(244, 63, 94, 0.12)',
+                    background: 'rgba(244, 63, 94, 0.1)',
                     color: '#f43f5e',
                     border: '1px solid rgba(244, 63, 94, 0.3)',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
+                    padding: '9px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.82rem',
                     fontWeight: 600,
                     textAlign: 'left',
+                    cursor: 'pointer',
                   }}
                 >
                   🔴 Thẻ Hết tiền (4000...0002)
@@ -297,14 +320,15 @@ function CheckoutContent() {
                   id="btn-test-card-declined"
                   onClick={() => handleQuickFill('declined')}
                   style={{
-                    background: 'rgba(245, 158, 11, 0.12)',
+                    background: 'rgba(245, 158, 11, 0.1)',
                     color: '#f59e0b',
                     border: '1px solid rgba(245, 158, 11, 0.3)',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
+                    padding: '9px 14px',
+                    borderRadius: '8px',
+                    fontSize: '0.82rem',
                     fontWeight: 600,
                     textAlign: 'left',
+                    cursor: 'pointer',
                   }}
                 >
                   ⛔ Thẻ Bị khóa (4000...0005)
@@ -313,19 +337,27 @@ function CheckoutContent() {
             </div>
           </div>
 
-          {/* Right Column: Checkout Form */}
-          <div className="glass-card" style={{ padding: '36px' }}>
+          {/* Right Column: Checkout Form (Adyen Sleek Experience) */}
+          <div
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-frosted)',
+              borderRadius: '20px',
+              padding: '36px',
+              backdropFilter: 'blur(16px)',
+            }}
+          >
             {/* Payment Method Switcher */}
             <div
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
                 gap: '8px',
-                background: 'rgba(15, 23, 42, 0.8)',
-                padding: '4px',
+                background: '#090a0f',
+                padding: '5px',
                 borderRadius: '12px',
-                marginBottom: '24px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                marginBottom: '26px',
+                border: '1px solid var(--border-frosted)',
               }}
             >
               <button
@@ -334,16 +366,16 @@ function CheckoutContent() {
                 onClick={() => setPaymentMethod('vietqr')}
                 style={{
                   padding: '10px 14px',
-                  borderRadius: '8px',
+                  borderRadius: '9px',
                   fontWeight: 600,
                   fontSize: '0.88rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  background: paymentMethod === 'vietqr' ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
-                  border: paymentMethod === 'vietqr' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid transparent',
-                  color: paymentMethod === 'vietqr' ? '#ffffff' : 'var(--text-muted)',
+                  background: paymentMethod === 'vietqr' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  border: paymentMethod === 'vietqr' ? '1px solid rgba(197, 168, 128, 0.3)' : '1px solid transparent',
+                  color: paymentMethod === 'vietqr' ? '#ffffff' : 'var(--text-dim)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                 }}
@@ -357,16 +389,16 @@ function CheckoutContent() {
                 onClick={() => setPaymentMethod('card')}
                 style={{
                   padding: '10px 14px',
-                  borderRadius: '8px',
+                  borderRadius: '9px',
                   fontWeight: 600,
                   fontSize: '0.88rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '10px',
-                  background: paymentMethod === 'card' ? 'rgba(255, 255, 255, 0.12)' : 'transparent',
-                  border: paymentMethod === 'card' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid transparent',
-                  color: paymentMethod === 'card' ? '#ffffff' : 'var(--text-muted)',
+                  background: paymentMethod === 'card' ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  border: paymentMethod === 'card' ? '1px solid rgba(197, 168, 128, 0.3)' : '1px solid transparent',
+                  color: paymentMethod === 'card' ? '#ffffff' : 'var(--text-dim)',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
                 }}
@@ -379,9 +411,9 @@ function CheckoutContent() {
             {errorMessage && (
               <div
                 style={{
-                  padding: '14px 16px',
-                  borderRadius: '10px',
-                  background: 'rgba(244, 63, 94, 0.15)',
+                  padding: '14px 18px',
+                  borderRadius: '12px',
+                  background: 'rgba(244, 63, 94, 0.12)',
                   border: '1px solid rgba(244, 63, 94, 0.3)',
                   color: '#fda4af',
                   fontSize: '0.88rem',
@@ -399,21 +431,30 @@ function CheckoutContent() {
             {paymentMethod === 'card' ? (
               <form onSubmit={handlePay}>
                 <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', color: '#cbd5e1' }}>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, marginBottom: '8px', color: '#d4d4d8' }}>
                     Số thẻ tín dụng / ghi nợ
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       id="input-card-number"
                       type="text"
-                      className="input-field"
                       value={cardNumber}
                       onChange={(e) => setCardNumber(e.target.value)}
                       placeholder="4242 4242 4242 4242"
-                      style={{ paddingRight: '80px' }}
+                      style={{
+                        width: '100%',
+                        background: '#090a0f',
+                        border: '1px solid var(--border-frosted)',
+                        borderRadius: '10px',
+                        color: '#ffffff',
+                        padding: '12px 14px',
+                        paddingRight: '80px',
+                        outline: 'none',
+                        fontSize: '0.95rem',
+                      }}
                       required
                     />
-                    <div style={{ position: 'absolute', right: '12px', top: '10px', display: 'flex', gap: '6px' }}>
+                    <div style={{ position: 'absolute', right: '12px', top: '12px', display: 'flex', gap: '6px' }}>
                       <VisaIcon width={30} height={18} />
                       <MastercardIcon width={30} height={18} />
                     </div>
@@ -422,47 +463,74 @@ function CheckoutContent() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', color: '#cbd5e1' }}>
+                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, marginBottom: '8px', color: '#d4d4d8' }}>
                       Hạn thẻ (MM/YY)
                     </label>
                     <input
                       id="input-card-exp"
                       type="text"
-                      className="input-field"
                       value={expDate}
                       onChange={(e) => setExpDate(e.target.value)}
                       placeholder="12/28"
+                      style={{
+                        width: '100%',
+                        background: '#090a0f',
+                        border: '1px solid var(--border-frosted)',
+                        borderRadius: '10px',
+                        color: '#ffffff',
+                        padding: '12px 14px',
+                        outline: 'none',
+                        fontSize: '0.95rem',
+                      }}
                       required
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', color: '#cbd5e1' }}>
+                    <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, marginBottom: '8px', color: '#d4d4d8' }}>
                       CVC / CVV
                     </label>
                     <input
                       id="input-card-cvc"
                       type="password"
                       maxLength={4}
-                      className="input-field"
                       value={cvc}
                       onChange={(e) => setCvc(e.target.value)}
                       placeholder="•••"
+                      style={{
+                        width: '100%',
+                        background: '#090a0f',
+                        border: '1px solid var(--border-frosted)',
+                        borderRadius: '10px',
+                        color: '#ffffff',
+                        padding: '12px 14px',
+                        outline: 'none',
+                        fontSize: '0.95rem',
+                      }}
                       required
                     />
                   </div>
                 </div>
 
                 <div style={{ marginBottom: '28px' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', color: '#cbd5e1' }}>
-                    Tên in trên thẻ
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, marginBottom: '8px', color: '#d4d4d8' }}>
+                    Tên chủ thẻ
                   </label>
                   <input
                     id="input-card-holder"
                     type="text"
-                    className="input-field"
                     value={holderName}
                     onChange={(e) => setHolderName(e.target.value)}
                     placeholder="NGUYEN VAN A"
+                    style={{
+                      width: '100%',
+                      background: '#090a0f',
+                      border: '1px solid var(--border-frosted)',
+                      borderRadius: '10px',
+                      color: '#ffffff',
+                      padding: '12px 14px',
+                      outline: 'none',
+                      fontSize: '0.95rem',
+                    }}
                     required
                   />
                 </div>
@@ -470,12 +538,12 @@ function CheckoutContent() {
                 <button
                   id="btn-submit-payment"
                   type="submit"
-                  className="btn-primary"
-                  style={{ width: '100%', padding: '16px', fontSize: '1.05rem' }}
+                  className="btn-mercury-gold"
+                  style={{ width: '100%', padding: '16px', fontSize: '1rem' }}
                   disabled={isProcessing}
                 >
                   <Lock size={18} />
-                  {isProcessing ? 'Đang xác thực qua Mock Bank...' : `Thanh toán ngay ${amount.toLocaleString('vi-VN')} ₫`}
+                  {isProcessing ? 'Đang gọi Spring Boot Engine...' : `Thanh toán ngay ${amount.toLocaleString('vi-VN')} ₫`}
                 </button>
               </form>
             ) : (
@@ -483,8 +551,8 @@ function CheckoutContent() {
               <div>
                 {/* Bank Selector Pills */}
                 <div style={{ marginBottom: '16px' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
-                    CHỌN NGÂN HÀNG THỤ HƯỞNG:
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 600, display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>
+                    CHỌN NGÂN HÀNG THỤ HƯỞNG (OPEN BANKING):
                   </span>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {['ACB', 'MB', 'BIDV', 'VIETCOMBANK'].map((b) => (
@@ -494,7 +562,7 @@ function CheckoutContent() {
                         onClick={() => setSelectedBank(b)}
                         style={{
                           background: selectedBank === b ? '#ffffff' : 'rgba(255, 255, 255, 0.05)',
-                          border: selectedBank === b ? '2px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.15)',
+                          border: selectedBank === b ? '2px solid var(--mercury-gold)' : '1px solid var(--border-frosted)',
                           padding: '6px 12px',
                           borderRadius: '8px',
                           cursor: 'pointer',
@@ -515,14 +583,14 @@ function CheckoutContent() {
                 <div
                   style={{
                     background: '#ffffff',
-                    padding: '20px',
+                    padding: '24px',
                     borderRadius: '16px',
                     textAlign: 'center',
                     marginBottom: '20px',
-                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)',
+                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                     <VietQrBadge size={28} />
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748b', fontSize: '0.78rem', fontWeight: 600 }}>
                       <Clock size={14} color="#f59e0b" />
@@ -537,7 +605,7 @@ function CheckoutContent() {
                     style={{ width: '200px', height: '200px', margin: '0 auto', display: 'block', borderRadius: '8px' }}
                   />
 
-                  <p style={{ color: '#475569', fontSize: '0.82rem', marginTop: '10px', fontWeight: 500 }}>
+                  <p style={{ color: '#475569', fontSize: '0.84rem', marginTop: '12px', fontWeight: 500 }}>
                     Mở App Ngân hàng bất kỳ & quét mã VietQR tự động điền số tiền
                   </p>
                 </div>
@@ -545,15 +613,15 @@ function CheckoutContent() {
                 {/* Transfer Info with Copy Buttons */}
                 <div
                   style={{
-                    background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: '10px',
-                    padding: '14px 16px',
+                    background: '#090a0f',
+                    border: '1px solid var(--border-frosted)',
+                    borderRadius: '12px',
+                    padding: '16px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '10px',
+                    gap: '12px',
                     fontSize: '0.85rem',
-                    marginBottom: '20px',
+                    marginBottom: '24px',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -563,7 +631,6 @@ function CheckoutContent() {
                       onClick={() => copyToClipboard('24550721', 'acc')}
                       style={{
                         background: 'rgba(255, 255, 255, 0.08)',
-                        border: 'none',
                         color: '#f8fafc',
                         fontWeight: 700,
                         padding: '4px 10px',
@@ -575,7 +642,7 @@ function CheckoutContent() {
                       }}
                     >
                       24550721
-                      {copiedField === 'acc' ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                      {copiedField === 'acc' ? <Check size={14} color="var(--adyen-green-neon)" /> : <Copy size={14} />}
                     </button>
                   </div>
 
@@ -586,8 +653,7 @@ function CheckoutContent() {
                       onClick={() => copyToClipboard(amount.toString(), 'amount')}
                       style={{
                         background: 'rgba(255, 255, 255, 0.08)',
-                        border: 'none',
-                        color: '#38bdf8',
+                        color: 'var(--mercury-gold)',
                         fontWeight: 700,
                         padding: '4px 10px',
                         borderRadius: '6px',
@@ -598,7 +664,7 @@ function CheckoutContent() {
                       }}
                     >
                       {amount.toLocaleString('vi-VN')} ₫
-                      {copiedField === 'amount' ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                      {copiedField === 'amount' ? <Check size={14} color="var(--adyen-green-neon)" /> : <Copy size={14} />}
                     </button>
                   </div>
 
@@ -621,7 +687,7 @@ function CheckoutContent() {
                       }}
                     >
                       APIPAY ORD8821
-                      {copiedField === 'memo' ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                      {copiedField === 'memo' ? <Check size={14} color="var(--adyen-green-neon)" /> : <Copy size={14} />}
                     </button>
                   </div>
                 </div>
@@ -637,8 +703,8 @@ function CheckoutContent() {
                       setPaymentSuccess(true);
                     }, 1000);
                   }}
-                  className="btn-primary"
-                  style={{ width: '100%', padding: '14px', fontSize: '0.95rem' }}
+                  className="btn-adyen-green"
+                  style={{ width: '100%', padding: '15px', fontSize: '0.95rem' }}
                 >
                   <Sparkles size={16} />
                   {isProcessing ? 'Đang nhận diện biến động số dư...' : '⚡ Giả lập Bank Webhook Báo Có'}

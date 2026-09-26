@@ -1,8 +1,8 @@
 import React from 'react';
 
-export function ApipayBrandLogo({ size = 26 }: { size?: number }) {
+export function ApipayBrandLogo({ size = 28 }: { size?: number }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
       <svg
         width={size}
         height={size}
@@ -10,35 +10,81 @@ export function ApipayBrandLogo({ size = 26 }: { size?: number }) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect width="32" height="32" rx="7" fill="#18181B" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-        {/* Double Bracket Chevron Glyphs */}
+        <defs>
+          <linearGradient id="goldHex" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#e8d7c0" />
+            <stop offset="50%" stopColor="#c5a880" />
+            <stop offset="100%" stopColor="#8d6e3f" />
+          </linearGradient>
+          <linearGradient id="shieldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#1c1d27" />
+            <stop offset="100%" stopColor="#0c0d12" />
+          </linearGradient>
+        </defs>
+
+        {/* Mercury-inspired geometric shield with gold border */}
+        <rect
+          x="1"
+          y="1"
+          width="30"
+          height="30"
+          rx="8"
+          fill="url(#shieldBg)"
+          stroke="url(#goldHex)"
+          strokeWidth="1.2"
+        />
+
+        {/* Double-Entry Symmetric Balance Lines & Diamond */}
         <path
-          d="M13 10L7 16L13 22"
-          stroke="#FFFFFF"
-          strokeWidth="2.5"
-          strokeLinecap="round"
+          d="M10 16L16 10L22 16L16 22L10 16Z"
+          stroke="url(#goldHex)"
+          strokeWidth="1.8"
           strokeLinejoin="round"
         />
-        <path
-          d="M19 10L25 16L19 22"
-          stroke="#00E5FF"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx="16" cy="16" r="2" fill="#FFFFFF" />
+        <circle cx="16" cy="16" r="2.5" fill="#0abf53" />
       </svg>
-      <span
-        style={{
-          fontFamily: 'var(--font-mono, monospace)',
-          fontSize: '1.25rem',
-          fontWeight: 800,
-          letterSpacing: '-0.03em',
-          color: '#ffffff',
-        }}
-      >
-        apipay
-      </span>
+
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-sans, sans-serif)',
+              fontSize: '1.2rem',
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              color: '#f5f5f7',
+              lineHeight: 1.1,
+            }}
+          >
+            APIPAY
+          </span>
+          <span
+            style={{
+              fontSize: '0.62rem',
+              padding: '1px 5px',
+              borderRadius: '4px',
+              background: 'rgba(10, 191, 83, 0.15)',
+              color: '#0abf53',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              border: '1px solid rgba(10, 191, 83, 0.3)',
+            }}
+          >
+            CORE
+          </span>
+        </div>
+        <span
+          style={{
+            fontSize: '0.62rem',
+            color: '#8b8e9b',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+          }}
+        >
+          Banking & Payments
+        </span>
+      </div>
     </div>
   );
 }
@@ -50,9 +96,9 @@ export function AppiBotAvatar({ size = 36 }: { size?: number }) {
         width: size,
         height: size,
         borderRadius: '50%',
-        background: 'linear-gradient(135deg, #18181B 0%, #09090B 100%)',
-        border: '1.5px solid rgba(255, 215, 0, 0.4)',
-        boxShadow: '0 0 12px rgba(255, 215, 0, 0.25)',
+        background: 'linear-gradient(135deg, #1b1c24 0%, #0d0e13 100%)',
+        border: '1.5px solid rgba(197, 168, 128, 0.4)',
+        boxShadow: '0 0 16px rgba(197, 168, 128, 0.25)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -61,23 +107,14 @@ export function AppiBotAvatar({ size = 36 }: { size?: number }) {
       }}
     >
       <svg width={size * 0.75} height={size * 0.75} viewBox="0 0 36 36" fill="none">
-        {/* Headphones (Yellow) */}
-        <rect x="2" y="14" width="4" height="10" rx="2" fill="#FBBF24" />
-        <rect x="30" y="14" width="4" height="10" rx="2" fill="#FBBF24" />
-        <path d="M4 14C4 8.47715 8.47715 4 14 4H22C27.5228 4 32 8.47715 32 14" stroke="#FBBF24" strokeWidth="2.5" strokeLinecap="round" />
-        
-        {/* Robot Head / Helmet */}
-        <rect x="6" y="8" width="24" height="20" rx="6" fill="#27272A" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-        
-        {/* Visor Screen (Dark Teal) */}
-        <rect x="9" y="12" width="18" height="11" rx="4" fill="#042F2E" />
-        
-        {/* Glowing Eyes */}
-        <circle cx="14" cy="17" r="2.2" fill="#2DD4BF" />
-        <circle cx="22" cy="17" r="2.2" fill="#2DD4BF" />
-        
-        {/* Cute Smile / Status Line */}
-        <path d="M16 20.5C16.8 21.2 19.2 21.2 20 20.5" stroke="#2DD4BF" strokeWidth="1.2" strokeLinecap="round" />
+        <rect x="2" y="14" width="4" height="10" rx="2" fill="#c5a880" />
+        <rect x="30" y="14" width="4" height="10" rx="2" fill="#c5a880" />
+        <path d="M4 14C4 8.47715 8.47715 4 14 4H22C27.5228 4 32 8.47715 32 14" stroke="#c5a880" strokeWidth="2.5" strokeLinecap="round" />
+        <rect x="6" y="8" width="24" height="20" rx="6" fill="#14151e" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+        <rect x="9" y="12" width="18" height="11" rx="4" fill="#0b1a13" />
+        <circle cx="14" cy="17" r="2.2" fill="#0abf53" />
+        <circle cx="22" cy="17" r="2.2" fill="#0abf53" />
+        <path d="M16 20.5C16.8 21.2 19.2 21.2 20 20.5" stroke="#0abf53" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
     </div>
   );
@@ -89,8 +126,8 @@ export function VietQrBadge({ size = 28 }: { size?: number }) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '6px',
-        padding: '3px 8px',
+        gap: '7px',
+        padding: '3px 9px',
         borderRadius: '6px',
         background: '#FFFFFF',
         border: '1px solid rgba(0,0,0,0.1)',

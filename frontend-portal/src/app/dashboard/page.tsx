@@ -16,6 +16,10 @@ import {
   XCircle,
   Lock,
   ArrowLeft,
+  Database,
+  Layers,
+  Sparkles,
+  CreditCard,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BankLogo } from '@/components/BankLogos';
@@ -34,6 +38,8 @@ export default function DashboardPage() {
   const [balance, setBalance] = useState<number>(490500);
   const [loading, setLoading] = useState<boolean>(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [prismaData, setPrismaData] = useState<any>(null);
+
   const [transactions, setTransactions] = useState<Transaction[]>([
     {
       id: '07929bbd-442c-40ff-a861-19b65d9a6c10',
@@ -64,14 +70,27 @@ export default function DashboardPage() {
         setBalance(data.available_balance);
       }
     } catch (err) {
-      console.error('Error connecting to backend balance API', err);
+      console.error('Error fetching balance from Spring Boot', err);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchPrismaOverview = async () => {
+    try {
+      const res = await fetch('/api/prisma/overview');
+      if (res.ok) {
+        const data = await res.json();
+        setPrismaData(data);
+      }
+    } catch (err) {
+      console.error('Error fetching Prisma overview', err);
+    }
+  };
+
   useEffect(() => {
     fetchBalance();
+    fetchPrismaOverview();
   }, []);
 
   const handleCopy = (text: string, keyName: string) => {
@@ -103,6 +122,7 @@ export default function DashboardPage() {
         const created: Transaction = await res.json();
         setTransactions((prev) => [created, ...prev]);
         setShowCreateModal(false);
+        fetchBalance();
       } else {
         alert('Lỗi tạo PaymentIntent từ Core Engine');
       }
@@ -114,8 +134,9 @@ export default function DashboardPage() {
   };
 
   return (
-    <div style={{ padding: '36px 28px' }}>
-      <div style={{ marginBottom: '24px' }}>
+    <div style={{ padding: '40px 32px 80px 32px', maxWidth: '1280px', margin: '0 auto' }}>
+      {/* Top Breadcrumb & Status */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <Link
           href="/"
           style={{
@@ -124,52 +145,64 @@ export default function DashboardPage() {
             gap: '8px',
             color: 'var(--text-secondary)',
             fontSize: '0.88rem',
-            marginBottom: '16px',
+            transition: 'color 0.15s ease',
           }}
+          onMouseOver={(e) => (e.currentTarget.style.color = '#f5f5f7')}
+          onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
         >
-          <ArrowLeft size={16} /> Quay về Trang chủ ApiPay
+          <ArrowLeft size={16} /> Quay về Trang chủ
         </Link>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+          <span className="adyen-pulse-dot" />
+          <span>Spring Boot Core :8080</span>
+          <span>•</span>
+          <span style={{ color: 'var(--mercury-gold)' }}>PostgreSQL 16 :5433</span>
+          <span>•</span>
+          <span style={{ color: 'var(--adyen-green-neon)' }}>RabbitMQ :5672</span>
+        </div>
       </div>
 
+      {/* Header: Mercury Treasury Overview */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          marginBottom: '32px',
+          marginBottom: '36px',
           flexWrap: 'wrap',
-          gap: '16px',
+          gap: '20px',
         }}
       >
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h1
-              id="dashboard-merchant-title"
+              id="dashboard-title"
               style={{
-                fontSize: '1.85rem',
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: '#ffffff',
+                fontSize: '2.2rem',
+                fontWeight: 800,
+                letterSpacing: '-0.025em',
+                color: 'var(--text-primary)',
               }}
             >
-              ApiPay Merchant Dashboard
+              Mercury Treasury & Sổ Cái
             </h1>
             <span
               style={{
-                background: 'rgba(16, 185, 129, 0.15)',
-                color: '#10b981',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
+                background: 'rgba(197, 168, 128, 0.15)',
+                color: 'var(--mercury-gold)',
+                border: '1px solid rgba(197, 168, 128, 0.3)',
                 padding: '4px 10px',
                 borderRadius: '999px',
                 fontSize: '0.75rem',
                 fontWeight: 700,
               }}
             >
-              Open Banking Active
+              SỔ CÁI BẤT BIẾN
             </span>
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Tài khoản liên kết: TechStore Vietnam • Ngân hàng: ACB, MB, Vietcombank
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginTop: '6px' }}>
+            Tài khoản thụ hưởng: <strong>TechStore Vietnam</strong> • Ngân hàng liên kết: ACB, MB, Vietcombank
           </p>
         </div>
 
@@ -177,139 +210,155 @@ export default function DashboardPage() {
           <button
             id="btn-refresh-balance"
             onClick={fetchBalance}
-            className="btn-apipay-dark"
+            className="btn-glass"
+            style={{ padding: '9px 18px', fontSize: '0.85rem' }}
             title="Đồng bộ số dư từ Sổ cái kép"
           >
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            Làm mới Sổ cái
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+            <span>Làm mới Sổ cái</span>
           </button>
 
           <button
             id="btn-create-intent-modal"
             onClick={() => setShowCreateModal(true)}
-            className="btn-apipay-white"
+            className="btn-mercury-gold"
+            style={{ padding: '9px 20px', fontSize: '0.85rem' }}
           >
-            <PlusCircle size={18} />
-            Tạo Giao dịch mới
+            <PlusCircle size={16} />
+            <span>Tạo Giao Dịch Mới</span>
           </button>
         </div>
       </div>
 
-      {/* 4 Financial Metric Cards */}
+      {/* 4 Financial Metric Cards (Mercury Luxury Glass & Adyen Status) */}
       <div
         id="metric-cards-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: '16px',
-          marginBottom: '32px',
+          gap: '20px',
+          marginBottom: '36px',
         }}
       >
         {/* Card 1: Available Balance */}
         <div
           style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '12px',
-            padding: '24px',
+            background: 'var(--bg-card)',
+            border: '1px solid rgba(197, 168, 128, 0.25)',
+            borderRadius: '16px',
+            padding: '26px',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)',
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               SỐ DƯ KHẢ DỤNG (LEDGER)
             </span>
             <div
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                background: 'rgba(255, 255, 255, 0.08)',
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: 'rgba(197, 168, 128, 0.15)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#ffffff',
+                color: 'var(--mercury-gold)',
               }}
             >
-              <Wallet size={18} />
+              <Wallet size={19} />
             </div>
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.02em' }}>
+          <div
+            style={{
+              fontSize: '2.1rem',
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              letterSpacing: '-0.02em',
+              fontFamily: 'var(--font-sans)',
+            }}
+          >
             {balance.toLocaleString('vi-VN')} ₫
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '0.8rem', color: '#10b981' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', fontSize: '0.8rem', color: 'var(--adyen-green-neon)' }}>
             <CheckCircle2 size={14} />
-            <span>Đã trừ phí sàn 1.5% + 2,000 ₫</span>
+            <span>Đã trừ phí cổng 1.5% + 2,000 ₫</span>
           </div>
         </div>
 
         {/* Card 2: Gross Volume */}
         <div
           style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '12px',
-            padding: '24px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-frosted)',
+            borderRadius: '16px',
+            padding: '26px',
+            backdropFilter: 'blur(16px)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>
-              DOANH THU QUA CỔNG
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              TỔNG DOANH THU ĐƠN
             </span>
             <div
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                background: 'rgba(16, 185, 129, 0.15)',
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: 'rgba(10, 191, 83, 0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#10b981',
+                color: 'var(--adyen-green-neon)',
               }}
             >
-              <TrendingUp size={18} />
+              <TrendingUp size={19} />
             </div>
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
             {(balance > 0 ? balance + 9500 : 0).toLocaleString('vi-VN')} ₫
           </div>
-          <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-            Biến động số dư tức thời
+          <div style={{ marginTop: '10px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+            Biến động số dư tức thời Napas 24/7
           </div>
         </div>
 
         {/* Card 3: Idempotency Protection */}
         <div
           style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '12px',
-            padding: '24px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-frosted)',
+            borderRadius: '16px',
+            padding: '26px',
+            backdropFilter: 'blur(16px)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               CHỐNG DOUBLE-CHARGE
             </span>
             <div
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
-                background: 'rgba(6, 182, 212, 0.15)',
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: 'rgba(56, 189, 248, 0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#06b6d4',
+                color: '#38bdf8',
               }}
             >
-              <Zap size={18} />
+              <Zap size={19} />
             </div>
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 700, color: '#06b6d4', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '-0.02em' }}>
             100% Active
           </div>
-          <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+          <div style={{ marginTop: '10px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
             Redisson Distributed Lock (TTL 24h)
           </div>
         </div>
@@ -317,58 +366,127 @@ export default function DashboardPage() {
         {/* Card 4: PCI Vault Status */}
         <div
           style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '12px',
-            padding: '24px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-frosted)',
+            borderRadius: '16px',
+            padding: '26px',
+            backdropFilter: 'blur(16px)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>
+            <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               CARD VAULT MÃ HÓA
             </span>
             <div
               style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '8px',
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
                 background: 'rgba(255, 255, 255, 0.08)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#ffffff',
+                color: '#f5f5f7',
               }}
             >
-              <Lock size={18} />
+              <Lock size={19} />
             </div>
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
             AES-256-GCM
           </div>
-          <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
-            Chuẩn bảo mật ngân hàng
+          <div style={{ marginTop: '10px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+            Chuẩn bảo mật ngân hàng quốc tế
           </div>
         </div>
       </div>
 
+      {/* Prisma ORM Real-time Database Insights (Next-Gen Stack) */}
+      {prismaData && (
+        <div
+          style={{
+            background: 'rgba(15, 16, 23, 0.8)',
+            border: '1px solid rgba(197, 168, 128, 0.25)',
+            borderRadius: '16px',
+            padding: '24px 28px',
+            marginBottom: '36px',
+            backdropFilter: 'blur(16px)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Database size={20} color="var(--mercury-gold)" />
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f5f5f7' }}>
+                Prisma ORM Real-Time Database Insights (Port 5433)
+              </h3>
+            </div>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--adyen-green-neon)',
+                fontWeight: 700,
+                background: 'rgba(10, 191, 83, 0.12)',
+                padding: '2px 8px',
+                borderRadius: '999px',
+              }}
+            >
+              PostgreSQL Connected
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', fontSize: '0.85rem' }}>
+            <div style={{ background: 'rgba(8, 8, 10, 0.6)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginBottom: '4px' }}>MERCHANT PROFILE</div>
+              <div style={{ fontWeight: 700, color: '#ffffff' }}>{prismaData.merchant?.businessName || 'TechStore VN'}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>ID: {prismaData.merchant?.id?.substring(0, 12)}...</div>
+            </div>
+
+            <div style={{ background: 'rgba(8, 8, 10, 0.6)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginBottom: '4px' }}>SỐ DƯ LEDGER HIỆN TẠI</div>
+              <div style={{ fontWeight: 700, color: 'var(--mercury-gold)' }}>
+                {prismaData.ledgerAccounts?.[0]?.balance?.toLocaleString('vi-VN')} VND
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Tài khoản: {prismaData.ledgerAccounts?.[0]?.accountNumber}</div>
+            </div>
+
+            <div style={{ background: 'rgba(8, 8, 10, 0.6)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginBottom: '4px' }}>RABBITMQ OUTBOX SỰ KIỆN</div>
+              <div style={{ fontWeight: 700, color: 'var(--adyen-green-neon)' }}>
+                {prismaData.stats?.totalOutboxEvents || 1} Sự kiện
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Exchange: payment.events.exchange</div>
+            </div>
+
+            <div style={{ background: 'rgba(8, 8, 10, 0.6)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginBottom: '4px' }}>WEBHOOK ĐÃ GIAO NHẬN</div>
+              <div style={{ fontWeight: 700, color: '#38bdf8' }}>
+                {prismaData.stats?.totalWebhookDeliveries || 1} Lần giao
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Ký số: HMAC-SHA256</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Developer API Keys & Testing Hub */}
       <div
         style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-color)',
-          borderRadius: '12px',
-          padding: '24px 28px',
-          marginBottom: '32px',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-frosted)',
+          borderRadius: '16px',
+          padding: '26px 30px',
+          marginBottom: '36px',
+          backdropFilter: 'blur(16px)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff' }}>
-              <ShieldCheck size={18} color="#10b981" />
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#f5f5f7' }}>
+              <ShieldCheck size={19} color="var(--mercury-gold)" />
               Khóa API & Môi trường Sandbox (Developer Keys)
             </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              Sử dụng các khóa này để gửi request xác thực với Backend Spring Boot.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginTop: '4px' }}>
+              Sử dụng các khóa này để gửi request xác thực với Backend Spring Boot Core.
             </p>
           </div>
 
@@ -376,11 +494,11 @@ export default function DashboardPage() {
             href="http://localhost:8080/swagger-ui.html"
             target="_blank"
             rel="noreferrer"
-            className="btn-apipay-dark"
-            style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+            className="btn-glass"
+            style={{ fontSize: '0.82rem', padding: '7px 15px' }}
           >
             <span>Swagger API Docs</span>
-            <ExternalLink size={14} />
+            <ExternalLink size={13} />
           </a>
         </div>
 
@@ -388,14 +506,14 @@ export default function DashboardPage() {
           {/* Secret Key */}
           <div
             style={{
-              background: '#09090b',
-              padding: '14px 16px',
-              borderRadius: '8px',
+              background: '#090a0f',
+              padding: '14px 18px',
+              borderRadius: '10px',
               border: '1px solid var(--border-subtle)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>SECRET KEY (Dành cho Server Backend)</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 600 }}>SECRET KEY (Backend Server)</span>
               <span style={{ fontSize: '0.72rem', color: '#f43f5e', fontWeight: 600 }}>Private</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
@@ -405,8 +523,8 @@ export default function DashboardPage() {
               <button
                 id="btn-copy-sk"
                 onClick={() => handleCopy('sk_test_demo_gateway_key_999', 'sk')}
-                style={{ color: copiedKey === 'sk' ? '#10b981' : '#71717a', padding: '4px' }}
-                title="Sao chép Secret Key"
+                style={{ color: copiedKey === 'sk' ? 'var(--adyen-green-neon)' : 'var(--text-dim)', padding: '4px' }}
+                title="Sao chép"
               >
                 {copiedKey === 'sk' ? <Check size={16} /> : <Copy size={16} />}
               </button>
@@ -416,25 +534,25 @@ export default function DashboardPage() {
           {/* Publishable Key */}
           <div
             style={{
-              background: '#09090b',
-              padding: '14px 16px',
-              borderRadius: '8px',
+              background: '#090a0f',
+              padding: '14px 18px',
+              borderRadius: '10px',
               border: '1px solid var(--border-subtle)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>PUBLISHABLE KEY (Dành cho Frontend / SDK)</span>
-              <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>Public</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 600 }}>PUBLISHABLE KEY (Frontend / SDK)</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--adyen-green-neon)', fontWeight: 600 }}>Public</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-              <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: '#86efac' }}>
+              <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--mercury-gold)' }}>
                 pk_test_demo_public_key_999
               </code>
               <button
                 id="btn-copy-pk"
                 onClick={() => handleCopy('pk_test_demo_public_key_999', 'pk')}
-                style={{ color: copiedKey === 'pk' ? '#10b981' : '#71717a', padding: '4px' }}
-                title="Sao chép Publishable Key"
+                style={{ color: copiedKey === 'pk' ? 'var(--adyen-green-neon)' : 'var(--text-dim)', padding: '4px' }}
+                title="Sao chép"
               >
                 {copiedKey === 'pk' ? <Check size={16} /> : <Copy size={16} />}
               </button>
@@ -443,30 +561,31 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Connected Bank Accounts (Open Banking / Napas 247) */}
+      {/* Connected Bank Accounts (Mercury Multi-Account Grid) */}
       <div
         style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-color)',
-          borderRadius: '12px',
-          padding: '24px 28px',
-          marginBottom: '32px',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-frosted)',
+          borderRadius: '16px',
+          padding: '26px 30px',
+          marginBottom: '36px',
+          backdropFilter: 'blur(16px)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff' }}>
-              <TrendingUp size={18} color="#38bdf8" />
-              Tài Khoản Ngân Hàng Thụ Hưởng (Open Banking Link)
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#f5f5f7' }}>
+              <CreditCard size={19} color="var(--mercury-gold)" />
+              Tài Khoản Ngân Hàng Thụ Hưởng (Open Banking Multi-Account)
             </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              Các tài khoản ngân hàng kết nối tự động bắt biến động số dư và sinh mã VietQR.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginTop: '4px' }}>
+              Các tài khoản ngân hàng kết nối tự động bắt biến động số dư và sinh mã VietQR Napas 24/7.
             </p>
           </div>
 
           <button
             type="button"
-            className="btn-apipay-dark"
+            className="btn-glass"
             onClick={() => alert('Chức năng liên kết thêm tài khoản ngân hàng Open Banking mới')}
             style={{ fontSize: '0.82rem', padding: '6px 14px' }}
           >
@@ -479,25 +598,25 @@ export default function DashboardPage() {
           {/* Bank 1: ACB */}
           <div
             style={{
-              background: '#09090b',
-              padding: '16px',
-              borderRadius: '10px',
-              border: '1px solid var(--border-subtle)',
+              background: '#090a0f',
+              padding: '18px',
+              borderRadius: '12px',
+              border: '1px solid rgba(197, 168, 128, 0.2)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ background: '#ffffff', padding: '6px 10px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ background: '#ffffff', padding: '6px 12px', borderRadius: '8px' }}>
                 <BankLogo code="ACB" size={20} />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ffffff' }}>STK: 24550721</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>TechStore Main Account</div>
+                <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#ffffff' }}>STK: 24550721</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>TechStore Operating Cash</div>
               </div>
             </div>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '999px' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--adyen-green-neon)', background: 'rgba(10, 191, 83, 0.15)', padding: '3px 9px', borderRadius: '999px' }}>
               Mặc định
             </span>
           </div>
@@ -505,25 +624,25 @@ export default function DashboardPage() {
           {/* Bank 2: MB Bank */}
           <div
             style={{
-              background: '#09090b',
-              padding: '16px',
-              borderRadius: '10px',
+              background: '#090a0f',
+              padding: '18px',
+              borderRadius: '12px',
               border: '1px solid var(--border-subtle)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ background: '#ffffff', padding: '6px 10px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ background: '#ffffff', padding: '6px 12px', borderRadius: '8px' }}>
                 <BankLogo code="MB" size={20} />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ffffff' }}>STK: 0987654321</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>MB Quân Đội Backup</div>
+                <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#ffffff' }}>STK: 0987654321</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>MB Quân Đội Treasury Escrow</div>
               </div>
             </div>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 8px', borderRadius: '999px' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', padding: '3px 9px', borderRadius: '999px' }}>
               Đang kết nối
             </span>
           </div>
@@ -531,44 +650,47 @@ export default function DashboardPage() {
           {/* Bank 3: Vietcombank */}
           <div
             style={{
-              background: '#09090b',
-              padding: '16px',
-              borderRadius: '10px',
+              background: '#090a0f',
+              padding: '18px',
+              borderRadius: '12px',
               border: '1px solid var(--border-subtle)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ background: '#ffffff', padding: '6px 10px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ background: '#ffffff', padding: '6px 12px', borderRadius: '8px' }}>
                 <BankLogo code="VIETCOMBANK" size={20} />
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ffffff' }}>STK: 0071000123456</div>
+                <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#ffffff' }}>STK: 0071000123456</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>VCB Chi nhánh Tân Bình</div>
               </div>
             </div>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '999px' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--adyen-green-neon)', background: 'rgba(10, 191, 83, 0.15)', padding: '3px 9px', borderRadius: '999px' }}>
               Sẵn sàng
             </span>
           </div>
         </div>
       </div>
 
-      {/* Transactions Explorer */}
+      {/* Transactions Explorer (Adyen Precision Table) */}
       <div
         style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-color)',
-          borderRadius: '12px',
-          padding: '24px 28px',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-frosted)',
+          borderRadius: '16px',
+          padding: '26px 30px',
+          backdropFilter: 'blur(16px)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
           <div>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff' }}>Giao dịch biến động gần đây (Transactions)</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#f5f5f7' }}>
+              Giao Dịch Biến Động Gần Đây (Transactions)
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginTop: '4px' }}>
               Đồng bộ dữ liệu thời gian thực từ Spring Boot Engine & PostgreSQL.
             </p>
           </div>
@@ -577,7 +699,7 @@ export default function DashboardPage() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-frosted)', color: 'var(--text-dim)' }}>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>MÃ GIAO DỊCH</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>MÔ TẢ ĐƠN HÀNG</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>SỐ TIỀN</th>
@@ -594,46 +716,46 @@ export default function DashboardPage() {
                     borderBottom: '1px solid var(--border-subtle)',
                   }}
                 >
-                  <td style={{ padding: '16px', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: '#a5b4fc' }}>
+                  <td style={{ padding: '16px', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#a5b4fc' }}>
                     {tx.id.substring(0, 16)}...
                   </td>
-                  <td style={{ padding: '16px', fontWeight: 500, color: '#ffffff' }}>
+                  <td style={{ padding: '16px', fontWeight: 500, color: '#f5f5f7' }}>
                     {tx.description}
                   </td>
-                  <td style={{ padding: '16px', fontWeight: 700, color: '#ffffff' }}>
+                  <td style={{ padding: '16px', fontWeight: 700, color: 'var(--mercury-gold)' }}>
                     {tx.amount.toLocaleString('vi-VN')} {tx.currency}
                   </td>
                   <td style={{ padding: '16px' }}>
                     {tx.status === 'SUCCEEDED' && (
-                      <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.8rem' }}>
-                        <CheckCircle2 size={14} /> Thành công
+                      <span style={{ color: 'var(--adyen-green-neon)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.82rem' }}>
+                        <CheckCircle2 size={15} /> Thành công
                       </span>
                     )}
                     {tx.status === 'REQUIRES_PAYMENT_METHOD' && (
-                      <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.8rem' }}>
-                        <Clock size={14} /> Chờ thanh toán
+                      <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.82rem' }}>
+                        <Clock size={15} /> Chờ thanh toán
                       </span>
                     )}
                     {tx.status === 'FAILED' && (
-                      <span style={{ color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.8rem' }}>
-                        <XCircle size={14} /> Thất bại
+                      <span style={{ color: '#f43f5e', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.82rem' }}>
+                        <XCircle size={15} /> Thất bại
                       </span>
                     )}
                   </td>
-                  <td style={{ padding: '16px', color: 'var(--text-dim)', fontSize: '0.8rem' }}>
+                  <td style={{ padding: '16px', color: 'var(--text-dim)', fontSize: '0.82rem' }}>
                     {new Date(tx.createdAt).toLocaleTimeString('vi-VN')} {new Date(tx.createdAt).toLocaleDateString('vi-VN')}
                   </td>
                   <td style={{ padding: '16px' }}>
                     {tx.status === 'REQUIRES_PAYMENT_METHOD' ? (
                       <a
                         href={`/checkout?session=${tx.clientSecret}`}
-                        className="btn-apipay-white"
+                        className="btn-mercury-gold"
                         style={{ padding: '5px 12px', fontSize: '0.78rem' }}
                       >
                         Thanh toán
                       </a>
                     ) : (
-                      <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--adyen-green-neon)', fontWeight: 600 }}>
                         Đã ghi sổ cái
                       </span>
                     )}
@@ -651,8 +773,8 @@ export default function DashboardPage() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -664,17 +786,18 @@ export default function DashboardPage() {
             style={{
               maxWidth: '520px',
               width: '100%',
-              padding: '32px',
-              background: '#121214',
-              border: '1px solid var(--border-color)',
-              borderRadius: '12px',
+              padding: '36px',
+              background: '#0e0f16',
+              border: '1px solid rgba(197, 168, 128, 0.3)',
+              borderRadius: '20px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9)',
             }}
           >
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '8px', color: '#ffffff' }}>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, marginBottom: '8px', color: '#f5f5f7' }}>
               Tạo Giao dịch PaymentIntent Mới
             </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '24px' }}>
-              Hệ thống sẽ gọi API <code style={{ color: '#a5b4fc' }}>POST /v1/payment_intents</code> kèm Idempotency-Key.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginBottom: '24px' }}>
+              Hệ thống sẽ gọi API <code style={{ color: 'var(--mercury-gold)' }}>POST /v1/payment_intents</code> kèm Idempotency-Key.
             </p>
 
             <form onSubmit={handleCreateIntent}>
@@ -691,18 +814,19 @@ export default function DashboardPage() {
                   onChange={(e) => setNewAmount(Number(e.target.value))}
                   style={{
                     width: '100%',
-                    background: '#09090b',
-                    border: '1px solid var(--border-color)',
+                    background: '#08080a',
+                    border: '1px solid var(--border-frosted)',
                     borderRadius: '8px',
                     color: '#ffffff',
-                    padding: '10px 14px',
+                    padding: '12px 14px',
                     outline: 'none',
+                    fontSize: '0.95rem',
                   }}
                   required
                 />
               </div>
 
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '26px' }}>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '8px', color: '#d4d4d8' }}>
                   Nội dung đơn hàng
                 </label>
@@ -713,12 +837,13 @@ export default function DashboardPage() {
                   onChange={(e) => setNewDesc(e.target.value)}
                   style={{
                     width: '100%',
-                    background: '#09090b',
-                    border: '1px solid var(--border-color)',
+                    background: '#08080a',
+                    border: '1px solid var(--border-frosted)',
                     borderRadius: '8px',
                     color: '#ffffff',
-                    padding: '10px 14px',
+                    padding: '12px 14px',
                     outline: 'none',
+                    fontSize: '0.95rem',
                   }}
                   required
                 />
@@ -728,7 +853,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="btn-apipay-dark"
+                  className="btn-glass"
                   disabled={creating}
                 >
                   Hủy bỏ
@@ -736,7 +861,7 @@ export default function DashboardPage() {
                 <button
                   id="btn-submit-create-intent"
                   type="submit"
-                  className="btn-apipay-white"
+                  className="btn-mercury-gold"
                   disabled={creating}
                 >
                   {creating ? 'Đang tạo...' : 'Khởi tạo PaymentIntent'}

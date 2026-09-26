@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingBag, Zap, ShieldCheck, ArrowRight, Star } from 'lucide-react';
+import { ShoppingBag, Zap, ShieldCheck, ArrowRight, Star, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 interface Product {
   id: string;
@@ -18,7 +19,7 @@ const PRODUCTS: Product[] = [
     id: 'prod-headphones',
     name: 'Sony WH-1000XM5 Noise Canceling',
     price: 7990000,
-    description: 'Tai nghe chống ồn không dây hàng đầu với 8 micro và bộ xử lý V1 kép.',
+    description: 'Tai nghe chống ồn không dây hàng đầu với 8 micro và bộ xử lý âm thanh V1 kép.',
     rating: 4.9,
     badge: 'Bán chạy nhất',
   },
@@ -26,7 +27,7 @@ const PRODUCTS: Product[] = [
     id: 'prod-keyboard',
     name: 'Keychron Q1 Pro Custom Keyboard',
     price: 4490000,
-    description: 'Bàn phím cơ CNC Aluminum nguyên khối, Bluetooth 5.1 & QMK/VIA.',
+    description: 'Bàn phím cơ CNC Aluminum nguyên khối, Bluetooth 5.1 & firmware QMK/VIA.',
     rating: 4.8,
     badge: 'Hàng mới',
   },
@@ -34,7 +35,7 @@ const PRODUCTS: Product[] = [
     id: 'prod-mouse',
     name: 'Logitech MX Master 3S Performance',
     price: 2290000,
-    description: 'Chuột công thái học cao cấp với con lăn siêu tốc MagSpeed và click tĩnh âm.',
+    description: 'Chuột công thái học cao cấp với con lăn siêu tốc MagSpeed và cảm biến 8000 DPI.',
     rating: 4.9,
     badge: 'Được đánh giá cao',
   },
@@ -47,7 +48,7 @@ export default function DemoStorePage() {
   const handleBuyNow = async (product: Product) => {
     setPurchasingId(product.id);
     try {
-      const idempKey = 'store_idemp_' + Math.random().toString(36).substring(2, 10);
+      const idempKey = 'store_mercury_' + Math.random().toString(36).substring(2, 10);
       const res = await fetch('http://localhost:8080/v1/payment_intents', {
         method: 'POST',
         headers: {
@@ -76,7 +77,26 @@ export default function DemoStorePage() {
   };
 
   return (
-    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '48px 24px' }}>
+    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '48px 24px 80px 24px' }}>
+      {/* Top Navigation */}
+      <div style={{ marginBottom: '24px' }}>
+        <Link
+          href="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: 'var(--text-secondary)',
+            fontSize: '0.88rem',
+            transition: 'color 0.15s ease',
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.color = '#f5f5f7')}
+          onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+        >
+          <ArrowLeft size={16} /> Quay về Trang chủ ApiPay
+        </Link>
+      </div>
+
       {/* Store Banner */}
       <div style={{ textAlign: 'center', marginBottom: '56px' }}>
         <div
@@ -84,33 +104,34 @@ export default function DemoStorePage() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'rgba(99, 102, 241, 0.12)',
-            color: '#a5b4fc',
+            background: 'rgba(197, 168, 128, 0.12)',
+            color: 'var(--mercury-gold)',
             padding: '6px 16px',
             borderRadius: '999px',
-            fontSize: '0.85rem',
-            fontWeight: 600,
+            fontSize: '0.82rem',
+            fontWeight: 700,
             marginBottom: '16px',
-            border: '1px solid rgba(99, 102, 241, 0.3)',
+            border: '1px solid rgba(197, 168, 128, 0.3)',
           }}
         >
           <ShoppingBag size={14} />
-          MÔ PHỎNG THỰC TẾ: E-COMMERCE TÍCH HỢP STRIPEPAY
+          MÔ PHỎNG THỰC TẾ: E-COMMERCE TÍCH HỢP APIPAY CORE
         </div>
 
         <h1
           id="store-main-title"
           style={{
-            fontSize: '2.5rem',
+            fontSize: 'clamp(2.4rem, 4vw, 3.2rem)',
             fontWeight: 800,
-            letterSpacing: '-0.02em',
-            marginBottom: '12px',
+            letterSpacing: '-0.025em',
+            marginBottom: '16px',
+            color: 'var(--text-primary)',
           }}
         >
           TechGear Vietnam Store
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', maxWidth: '640px', margin: '0 auto' }}>
-          Bấm <strong>&quot;Mua ngay với StripePay&quot;</strong> để trải nghiệm toàn bộ hành trình gọi API, mở trang Checkout và ghi nhận Sổ cái kế toán kép.
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.08rem', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
+          Bấm <strong>&quot;Mua ngay với ApiPay&quot;</strong> để trải nghiệm toàn bộ hành trình gọi API Spring Boot, định tuyến Checkout Adyen và ghi nhận Sổ cái kép Mercury.
         </p>
       </div>
 
@@ -125,19 +146,34 @@ export default function DemoStorePage() {
         {PRODUCTS.map((product) => (
           <div
             key={product.id}
-            className="glass-card"
             style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-frosted)',
+              borderRadius: '20px',
               padding: '32px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              position: 'relative',
-              overflow: 'hidden',
+              backdropFilter: 'blur(16px)',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)',
+              transition: 'transform 0.2s ease, border-color 0.2s ease',
             }}
           >
             {/* Badge */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <span className="badge badge-info">{product.badge}</span>
+              <span
+                style={{
+                  background: 'rgba(197, 168, 128, 0.15)',
+                  color: 'var(--mercury-gold)',
+                  border: '1px solid rgba(197, 168, 128, 0.3)',
+                  padding: '4px 10px',
+                  borderRadius: '999px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                }}
+              >
+                {product.badge}
+              </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600 }}>
                 <Star size={14} fill="#f59e0b" />
                 <span>{product.rating}</span>
@@ -146,20 +182,20 @@ export default function DemoStorePage() {
 
             {/* Product Details */}
             <div style={{ marginBottom: '28px' }}>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '10px' }}>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '10px', color: '#f5f5f7' }}>
                 {product.name}
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', minHeight: '48px' }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, minHeight: '48px' }}>
                 {product.description}
               </p>
             </div>
 
             {/* Price & Action */}
-            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '20px' }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '2px' }}>
+            <div style={{ borderTop: '1px solid var(--border-frosted)', paddingTop: '20px' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
                 Giá niêm yết
               </div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', marginBottom: '18px' }}>
+              <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--mercury-gold)', marginBottom: '20px' }}>
                 {product.price.toLocaleString('vi-VN')} ₫
               </div>
 
@@ -167,14 +203,14 @@ export default function DemoStorePage() {
                 id={`btn-buy-product-${product.id}`}
                 onClick={() => handleBuyNow(product)}
                 disabled={purchasingId === product.id}
-                className="btn-primary"
+                className="btn-mercury-gold"
                 style={{ width: '100%', padding: '14px', fontSize: '0.95rem' }}
               >
                 {purchasingId === product.id ? (
                   <span>Đang khởi tạo cổng...</span>
                 ) : (
                   <>
-                    <span>Mua ngay với StripePay</span>
+                    <span>Mua ngay với ApiPay</span>
                     <ArrowRight size={16} />
                   </>
                 )}
