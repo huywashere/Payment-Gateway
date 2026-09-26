@@ -1,0 +1,99 @@
+package com.gateway.infrastructure.adapter.redis;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gateway.domain.exception.IdempotencyConflictException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBucket;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class IdempotencyManager {
+
+    private final RedissonClient redissonClient;
+    private final ObjectMapper objectMapper;
+
+    @Value("${gateway.idempotency.ttl-seconds:86400}")
+    private long idempotencyTtlSeconds;
+
+    @Value("${gateway.idempotency.lock-timeout-seconds:30}")
+    private long lockTimeoutSeconds;
+
+    /**
+     * Executes the given supplier within a distributed idempotency boundary.
+     * If the key is already resolved, returns the cached result.
+     * If another thread/node is currently resolving it, throws 409 Conflict.
+     */
+    public <T> T execute(UUID merchantId, String idempotencyKey, Class<T> responseType, Supplier<T> operation) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            return operation.get();
+        }
+
+        String cacheKey = "result:idemp:" + merchantId + ":" + idempotencyKey;
+        String lockKey = "lock:idemp:" + merchantId + ":" + idempotencyKey;
+
+        // 1. Check if we already have a cached resolved response
+        RBucket<String> cachedBucket = redissonClient.getBucket(cacheKey);
+        String cachedValue = cachedBucket.get();
+        if (cachedValue != null) {
+            log.info("Idempotency HIT for key {}: Replaying cached response", idempotencyKey);
+            try {
+                return objectMapper.readValue(cachedValue, responseType);
+            } catch (JsonProcessingException e) {
+                log.error("Failed to deserialize cached idempotency response", e);
+            }
+        }
+
+        // 2. Acquire Distributed Lock with 0 wait time to immediately reject concurrent double-clicks
+        RLock lock = redissonClient.getLock(lockKey);
+        boolean acquired = false;
+        try {
+            acquired = lock.tryLock(0, lockTimeoutSeconds, TimeUnit.SECONDS);
+            if (!acquired) {
+                log.warn("Concurrent duplicate request detected for idempotency key: {}", idempotencyKey);
+                throw new IdempotencyConflictException(
+                        "An operation with the key '" + idempotencyKey + "' is currently being processed. Please wait and do not retry immediately."
+                );
+            }
+
+            // Double check cache after acquiring lock
+            cachedValue = cachedBucket.get();
+            if (cachedValue != null) {
+                return objectMapper.readValue(cachedValue, responseType);
+            }
+
+            // 3. Execute business logic
+            T result = operation.get();
+
+            // 4. Save result to cache with TTL (24 hours)
+            try {
+                String serialized = objectMapper.writeValueAsString(result);
+                cachedBucket.set(serialized, Duration.ofSeconds(idempotencyTtlSeconds));
+            } catch (JsonProcessingException e) {
+                log.error("Failed to serialize idempotency result", e);
+            }
+
+            return result;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Thread interrupted while acquiring lock", e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Serialization error in idempotency operation", e);
+        } finally {
+            if (acquired && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+    }
+}
