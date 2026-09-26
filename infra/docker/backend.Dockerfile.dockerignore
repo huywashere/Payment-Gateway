@@ -1,0 +1,6 @@
+**
+!backend-core/
+!backend-core/.mvn/**
+!backend-core/mvnw
+!backend-core/pom.xml
+!backend-core/src/**

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingBag, Zap, ShieldCheck, ArrowRight, Star, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Star, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 interface Product {
@@ -48,12 +48,11 @@ export default function DemoStorePage() {
   const handleBuyNow = async (product: Product) => {
     setPurchasingId(product.id);
     try {
-      const idempKey = 'store_mercury_' + Math.random().toString(36).substring(2, 10);
-      const res = await fetch('http://localhost:8080/v1/payment_intents', {
+      const idempKey = `store_mercury_${crypto.randomUUID()}`;
+      const res = await fetch('/api/gateway/v1/payment_intents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer sk_test_demo_gateway_key_999',
           'Idempotency-Key': idempKey,
         },
         body: JSON.stringify({

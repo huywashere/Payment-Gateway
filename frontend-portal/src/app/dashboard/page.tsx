@@ -17,8 +17,6 @@ import {
   Lock,
   ArrowLeft,
   Database,
-  Layers,
-  Sparkles,
   CreditCard,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -34,23 +32,20 @@ interface Transaction {
   clientSecret: string;
 }
 
+interface PrismaOverview {
+  merchant: { id: string; businessName: string } | null;
+  ledgerAccounts: Array<{ accountCode: string; accountName: string; balance: number }>;
+  stats: { totalIntents: number; totalOutboxEvents: number; totalWebhookDeliveries: number };
+  transactions: Transaction[];
+}
+
 export default function DashboardPage() {
   const [balance, setBalance] = useState<number>(490500);
   const [loading, setLoading] = useState<boolean>(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [prismaData, setPrismaData] = useState<any>(null);
+  const [prismaData, setPrismaData] = useState<PrismaOverview | null>(null);
 
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: '07929bbd-442c-40ff-a861-19b65d9a6c10',
-      amount: 500000,
-      currency: 'VND',
-      status: 'SUCCEEDED',
-      description: 'Đơn hàng giày sneaker #8821',
-      createdAt: new Date().toISOString(),
-      clientSecret: 'pi_c575898f00df47f8b71ce7373419c662_secret_5a4d86f9af6347a3',
-    },
-  ]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [newAmount, setNewAmount] = useState<number>(350000);
@@ -60,11 +55,7 @@ export default function DashboardPage() {
   const fetchBalance = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8080/v1/balance', {
-        headers: {
-          Authorization: 'Bearer sk_test_demo_gateway_key_999',
-        },
-      });
+      const res = await fetch('/api/gateway/v1/balance', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setBalance(data.available_balance);
@@ -82,6 +73,7 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json();
         setPrismaData(data);
+        setTransactions(data.transactions ?? []);
       }
     } catch (err) {
       console.error('Error fetching Prisma overview', err);
@@ -89,8 +81,10 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchBalance();
-    fetchPrismaOverview();
+    const timeoutId = window.setTimeout(() => {
+      void Promise.all([fetchBalance(), fetchPrismaOverview()]);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   const handleCopy = (text: string, keyName: string) => {
@@ -103,12 +97,11 @@ export default function DashboardPage() {
     e.preventDefault();
     setCreating(true);
     try {
-      const idempKey = 'idemp_' + Math.random().toString(36).substring(2, 10);
-      const res = await fetch('http://localhost:8080/v1/payment_intents', {
+      const idempKey = `idemp_${crypto.randomUUID()}`;
+      const res = await fetch('/api/gateway/v1/payment_intents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer sk_test_demo_gateway_key_999',
           'Idempotency-Key': idempKey,
         },
         body: JSON.stringify({
@@ -444,15 +437,15 @@ export default function DashboardPage() {
             <div style={{ background: 'rgba(8, 8, 10, 0.6)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
               <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginBottom: '4px' }}>SỐ DƯ LEDGER HIỆN TẠI</div>
               <div style={{ fontWeight: 700, color: 'var(--mercury-gold)' }}>
-                {prismaData.ledgerAccounts?.[0]?.balance?.toLocaleString('vi-VN')} VND
+                {(prismaData.ledgerAccounts?.[0]?.balance ?? 0).toLocaleString('vi-VN')} VND
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Tài khoản: {prismaData.ledgerAccounts?.[0]?.accountNumber}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Tài khoản: {prismaData.ledgerAccounts?.[0]?.accountCode ?? 'Chưa phát sinh'}</div>
             </div>
 
             <div style={{ background: 'rgba(8, 8, 10, 0.6)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
               <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginBottom: '4px' }}>RABBITMQ OUTBOX SỰ KIỆN</div>
               <div style={{ fontWeight: 700, color: 'var(--adyen-green-neon)' }}>
-                {prismaData.stats?.totalOutboxEvents || 1} Sự kiện
+                {prismaData.stats?.totalOutboxEvents ?? 0} Sự kiện
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Exchange: payment.events.exchange</div>
             </div>
@@ -460,7 +453,7 @@ export default function DashboardPage() {
             <div style={{ background: 'rgba(8, 8, 10, 0.6)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
               <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem', marginBottom: '4px' }}>WEBHOOK ĐÃ GIAO NHẬN</div>
               <div style={{ fontWeight: 700, color: '#38bdf8' }}>
-                {prismaData.stats?.totalWebhookDeliveries || 1} Lần giao
+                {prismaData.stats?.totalWebhookDeliveries ?? 0} Lần giao
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Ký số: HMAC-SHA256</div>
             </div>

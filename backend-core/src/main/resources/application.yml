@@ -5,22 +5,11 @@ server:
 spring:
   application:
     name: payment-gateway-core
+  profiles:
+    default: local
   threads:
     virtual:
       enabled: true
-
-  # PostgreSQL Configuration
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/payment_gateway}
-    username: ${SPRING_DATASOURCE_USERNAME:gateway_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:gateway_pass}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      idle-timeout: 300000
-      connection-timeout: 20000
-      max-lifetime: 1200000
 
   jpa:
     open-in-view: false
@@ -35,22 +24,9 @@ spring:
   # Flyway Database Migration
   flyway:
     enabled: true
-    baseline-on-migrate: true
     locations: classpath:db/migration
 
-  # Redis Configuration
-  data:
-    redis:
-      host: ${SPRING_REDIS_HOST:localhost}
-      port: ${SPRING_REDIS_PORT:6379}
-      timeout: 3000ms
-
-  # RabbitMQ Configuration
   rabbitmq:
-    host: ${SPRING_RABBITMQ_HOST:localhost}
-    port: ${SPRING_RABBITMQ_PORT:5672}
-    username: ${SPRING_RABBITMQ_USERNAME:gateway_user}
-    password: ${SPRING_RABBITMQ_PASSWORD:gateway_pass}
     template:
       retry:
         enabled: true
@@ -61,14 +37,12 @@ spring:
 
 # Gateway Custom Configurations
 gateway:
-  security:
-    card-vault-master-key: ${GATEWAY_VAULT_KEY:dGhpc2lzYXZlcnlzZWNyZXRrZXlmb3J2YXVsdA==} # Base64 encoded 256-bit key
   fee:
-    fixed-fee-vnd: 2000
-    percentage-fee: 0.015 # 1.5% platform fee
+    fixed-fee-vnd: ${GATEWAY_FIXED_FEE_VND:2000}
+    percentage-fee: ${GATEWAY_PERCENTAGE_FEE:0.015}
   idempotency:
-    ttl-seconds: 86400 # 24 hours replay cache
-    lock-timeout-seconds: 30
+    ttl-seconds: ${GATEWAY_IDEMPOTENCY_TTL_SECONDS:86400}
+    lock-timeout-seconds: ${GATEWAY_IDEMPOTENCY_LOCK_SECONDS:30}
 
 # Springdoc OpenAPI / Swagger UI
 springdoc:
@@ -84,7 +58,9 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info
   endpoint:
     health:
-      show-details: always
+      show-details: never
+      probes:
+        enabled: true

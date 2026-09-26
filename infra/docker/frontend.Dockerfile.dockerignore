@@ -1,0 +1,13 @@
+**
+!frontend-portal/
+!frontend-portal/package.json
+!frontend-portal/package-lock.json
+!frontend-portal/prisma/**
+!frontend-portal/public/**
+!frontend-portal/src/**
+!frontend-portal/next.config.ts
+!frontend-portal/tsconfig.json
+!frontend-portal/eslint.config.mjs
+!infra/
+!infra/docker/
+!infra/docker/frontend-entrypoint.sh

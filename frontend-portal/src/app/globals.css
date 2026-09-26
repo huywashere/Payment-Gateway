@@ -47,6 +47,8 @@
   padding: 0;
 }
 
+html, body { width: 100%; max-width: 100%; }
+
 body {
   font-family: var(--font-body);
   background-color: var(--bg-obsidian);
@@ -57,6 +59,154 @@ body {
   position: relative;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.site-shell { min-height: 100vh; background: var(--bg-adyen-navy); }
+.site-shell > main { min-height: 100vh; padding-top: 72px; }
+
+.adyen-site-header {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  color: #fff;
+  transition: color .45s var(--out-expo, ease), background-color .45s ease, box-shadow .45s ease;
+}
+.adyen-site-header.is-scrolled { color: #00112c; background: rgba(255,255,255,.97); box-shadow: 0 1px 0 rgba(0,17,44,.12); backdrop-filter: blur(16px); }
+.adyen-header-brand { display: flex; align-items: center; height: 100%; gap: 22px; }
+.apipay-wordmark { color: #00d474; font-family: var(--font-sans); font-size: 1.62rem; font-weight: 800; letter-spacing: -.08em; line-height: 1; }
+.adyen-header-divider { width: 1px; height: 24px; background: currentColor; opacity: .24; }
+.adyen-menu-button { display: none; width: 28px; height: 28px; color: #00112c; align-items: center; justify-content: center; flex-direction: column; gap: 4px; }
+.adyen-menu-button i { display: block; width: 17px; height: 1.5px; border-radius: 2px; background: currentColor; }
+.adyen-desktop-nav { display: flex; align-items: center; gap: 30px; font-weight: 650; font-size: .9rem; }
+.adyen-desktop-nav a { position: relative; padding: 24px 0; }
+.adyen-desktop-nav a::after { content: ''; position: absolute; right: 0; bottom: 17px; left: 0; height: 2px; background: #00d474; transform: scaleX(0); transform-origin: left; transition: transform .35s var(--out-expo, ease); }
+.adyen-desktop-nav a:hover::after { transform: scaleX(1); }
+.adyen-header-actions { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+.adyen-header-actions button,.adyen-header-actions > a:not(.adyen-contact-button) { display: flex; color: inherit; transition: transform .2s ease, color .2s ease; }
+.adyen-header-actions button:hover,.adyen-header-actions > a:not(.adyen-contact-button):hover { color: #00d474; transform: scale(1.08); }
+.adyen-action-divider { width: 1px; height: 28px; background: currentColor; opacity: .18; }
+.adyen-contact-button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 7px; background: #00d474; color: #00112c !important; font-weight: 750; transition: background .2s ease, transform .2s ease; }
+.adyen-contact-button:hover { background: #00ed82; transform: translateY(-1px); }
+.adyen-mobile-drawer { display: none; }
+
+.adyen-hero { width: 100%; max-width: 100vw; min-width: 0; min-height: 100svh !important; margin-top: -72px; padding-top: 72px; animation: heroReveal 1s ease both; }
+.adyen-hero::after { content: ''; position: absolute; z-index: 1; inset: 0; background: linear-gradient(180deg, rgba(0,17,44,.12), rgba(0,17,44,.05) 45%, rgba(0,17,44,.58)); pointer-events: none; }
+.adyen-hero-content { width: min(100%,900px); min-width: 0; margin-block: auto !important; padding-top: 60px !important; }
+.adyen-hero-title,.adyen-hero-subtitle { max-width: 100%; overflow-wrap: anywhere; }
+.adyen-spotlight,.adyen-hero-title,.adyen-hero-subtitle,.adyen-hero-actions { animation: heroContentIn .9s var(--out-expo, ease) both; }
+.adyen-hero-title { animation-delay: .08s; }
+.adyen-hero-subtitle { animation-delay: .14s; }
+.adyen-hero-actions { animation-delay: .2s; }
+.adyen-client-strip { position: absolute !important; bottom: 0; left: 0; right: 0; width: 100vw !important; max-width: 100vw; min-width: 0; overflow: hidden; }
+.adyen-client-strip > *,.adyen-client-strip .marquee-container { min-width: 0; max-width: 100%; }
+@keyframes heroReveal { from { opacity: .2; } to { opacity: 1; } }
+@keyframes heroContentIn { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+
+.reveal-on-scroll { opacity: 1; transform: none; }
+@supports (animation-timeline: view()) {
+  .reveal-on-scroll { animation: sectionReveal linear both; animation-timeline: view(); animation-range: entry 8% cover 28%; }
+  @keyframes sectionReveal { from { opacity: .15; transform: translateY(42px); } to { opacity: 1; transform: none; } }
+}
+.adyen-money-section { min-height: 820px; display: flex; align-items: center; }
+.adyen-money-grid { width: 100%; }
+
+.adyen-platform-section { position: relative; min-height: 875px; padding: 0 24px 0 0 !important; color: #fff; overflow: hidden; }
+.adyen-platform-grid { min-height: 875px; max-width: none !important; grid-template-columns: minmax(0,2fr) minmax(520px,.94fr) !important; gap: 0 !important; }
+.adyen-platform-grid > div:first-child { min-height: 875px; justify-content: center; }
+.adyen-platform-panel { min-height: 730px; border-radius: 0 !important; padding: 155px 24px 34px !important; box-shadow: none !important; }
+.adyen-platform-panel h2 { font-size: clamp(2rem,2.25vw,2.8rem) !important; max-width: 540px; }
+.adyen-platform-panel p { max-width: 560px; }
+.adyen-usecase { color: #fff !important; padding: 18px 0 !important; margin: 0 !important; border-bottom: 1px solid rgba(255,255,255,.14) !important; }
+.adyen-usecase:hover { color: #00d474 !important; }
+.adyen-usecase svg { transition: transform .25s ease; }
+.adyen-usecase:hover svg { transform: translateX(5px); }
+.adyen-platform-rail { position: absolute; z-index: 4; top: 214px; left: 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; font: 700 .72rem var(--font-mono); }
+.adyen-platform-rail span { width: 1px; height: 96px; background: rgba(255,255,255,.23); }
+.adyen-platform-rail i { display: block; width: 1px; height: 28%; background: #00d474; animation: railTravel 2.8s ease-in-out infinite alternate; }
+@keyframes railTravel { to { transform: translateY(69px); } }
+
+.adyen-site-footer { position: relative; min-height: 920px; overflow: hidden; color: #fff; background: #001126; border-top: 1px solid rgba(255,255,255,.08); }
+.adyen-footer-top { position: relative; z-index: 4; max-width: 1440px; margin: auto; padding: 42px 24px 0; }
+.adyen-footer-brand-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.adyen-footer-logo-pill { display: inline-flex; align-items: center; gap: 7px; min-height: 48px; padding: 0 22px; border-radius: 7px; color: #00112c; background: #fff; }
+.adyen-footer-logo-pill > span:nth-child(2) { width: 1px; height: 21px; margin: 0 16px; background: #cbd5e1; }
+.adyen-footer-logo-pill i { display: none; }
+.adyen-footer-grid { display: grid; grid-template-columns: repeat(2,minmax(180px,1fr)) minmax(280px,2fr); gap: 38px 72px; max-width: 1180px; }
+.adyen-footer-grid section { display: flex; flex-direction: column; gap: 7px; }
+.adyen-footer-grid section:nth-child(3) { grid-column: 1; }
+.adyen-footer-grid section:nth-child(4) { grid-column: 2; }
+.adyen-footer-grid h2 { margin-bottom: 10px; color: #718096; font-family: var(--font-mono); font-size: .7rem; letter-spacing: .04em; }
+.adyen-footer-grid a { width: max-content; max-width: 100%; font-weight: 650; font-size: .92rem; transition: color .2s ease, transform .2s ease; }
+.adyen-footer-grid a:hover { color: #00d474; transform: translateX(3px); }
+.adyen-footer-grid .adyen-newsletter { grid-column: 3; grid-row: 1; }
+.adyen-newsletter a { padding: 13px 18px; border-radius: 7px; background: #1b2c40; }
+.adyen-footer-bottom { position: absolute; z-index: 5; right: 24px; bottom: 20px; left: 24px; display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); color: #718096; font-size: .7rem; font-weight: 700; }
+.adyen-footer-bottom > div { display: flex; align-items: center; gap: 24px; }
+.adyen-footer-social { color: #fff; }
+.adyen-footer-social b { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 7px; background: #1b2c40; }
+.adyen-footer-social > span { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 18px; border-radius: 7px; background: #1b2c40; }
+
+@media (max-width: 900px) {
+  .site-shell > main { padding-top: 80px; }
+  .adyen-site-header { top: 12px; height: 56px; padding: 0 16px; pointer-events: none; }
+  .adyen-site-header > * { min-width: 0; }
+  .adyen-header-brand { pointer-events: auto; height: 48px; padding: 0 16px; border: 1px solid rgba(0,17,44,.15); border-radius: 8px; color: #00112c; background: #fff; box-shadow: 0 8px 30px rgba(0,17,44,.14); }
+  .adyen-header-brand .apipay-wordmark { font-size: 1.35rem; }
+  .adyen-menu-button { display: flex; }
+  .adyen-desktop-nav,.adyen-header-actions button,.adyen-header-actions > a:not(.adyen-contact-button),.adyen-action-divider { display: none; }
+  .adyen-header-actions { pointer-events: auto; }
+  .adyen-contact-button { min-height: 48px; }
+  .adyen-mobile-drawer { position: fixed; z-index: 95; inset: 0; display: flex; flex-direction: column; padding: 94px 20px 30px; color: #fff; background: #00112c; opacity: 0; visibility: hidden; transform: translateY(-12px); transition: opacity .35s ease, transform .5s var(--out-expo,ease), visibility .35s; }
+  .adyen-mobile-drawer.is-open { opacity: 1; visibility: visible; transform: none; }
+  .adyen-mobile-drawer nav { display: flex; flex-direction: column; border-top: 1px solid rgba(255,255,255,.16); }
+  .adyen-mobile-drawer nav a { display: flex; align-items: center; justify-content: space-between; padding: 18px 2px; border-bottom: 1px solid rgba(255,255,255,.16); font: 650 1.2rem var(--font-sans); opacity: 0; transform: translateY(-10px); }
+  .adyen-mobile-drawer.is-open nav a { animation: drawerItem .55s var(--out-expo,ease) forwards; animation-delay: calc(var(--item-index) * 45ms + 100ms); }
+  .adyen-mobile-drawer > .adyen-contact-button { margin-top: auto; }
+  @keyframes drawerItem { to { opacity: 1; transform: none; } }
+  .adyen-hero { margin-top: -80px; padding-top: 0; min-height: 820px !important; }
+  .adyen-hero-content { width: 100% !important; max-width: 100vw !important; padding: 110px 20px 150px !important; overflow: hidden; }
+  .adyen-spotlight { width: 100%; max-width: 350px !important; flex-wrap: wrap; justify-content: center; gap: 7px !important; padding-inline: 12px !important; }
+  .adyen-spotlight span { min-width: 0; max-width: 100%; white-space: normal; text-align: center; overflow-wrap: anywhere; }
+  .adyen-spotlight span:last-child { flex-basis: 100%; }
+  .adyen-hero-title { font-size: clamp(2.4rem,12vw,4rem) !important; }
+  .adyen-hero-subtitle { font-size: 1rem !important; }
+  .adyen-hero-actions { flex-direction: column; width: 100%; max-width: 100%; }
+  .adyen-hero-actions a { width: min(100%,340px); }
+  .adyen-client-strip { padding-inline: 18px !important; }
+  .adyen-platform-section { padding: 92px 18px !important; }
+  .adyen-platform-grid { min-height: 0; display: flex !important; flex-direction: column; }
+  .adyen-platform-grid > div:first-child { min-height: 520px; }
+  .adyen-platform-panel { min-height: 0; padding: 32px 24px !important; border-radius: 8px !important; }
+  .adyen-platform-rail { display: none; }
+  .adyen-money-section { min-height: 0; padding: 88px 18px !important; }
+  .adyen-money-grid { display: flex !important; flex-direction: column; gap: 18px !important; }
+  .adyen-money-panel { padding: 30px 24px !important; }
+  .section-white,.section-light { padding: 78px 20px !important; }
+  .section-white > div,.section-light > div { grid-template-columns: 1fr !important; }
+  .adyen-footer-grid { grid-template-columns: 1fr 1fr; gap: 34px 22px; }
+  .adyen-footer-grid .adyen-newsletter { grid-column: 1 / -1; grid-row: auto; }
+  .adyen-footer-bottom { position: relative; inset: auto; margin-top: 340px; padding: 20px; flex-direction: column; align-items: flex-start; gap: 22px; }
+}
+
+@media (max-width: 560px) {
+  .adyen-site-header .adyen-contact-button { padding: 0 15px; }
+  .adyen-footer-grid { grid-template-columns: 1fr; }
+  .adyen-footer-grid section:nth-child(n) { grid-column: 1; }
+  .adyen-footer-brand-row { align-items: stretch; gap: 12px; }
+  .adyen-footer-logo-pill { padding-inline: 15px; }
+  .adyen-footer-brand-row .adyen-contact-button { padding-inline: 14px; }
+  .adyen-footer-bottom > div { gap: 12px; flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
 /* Ambient Backdrops (Mercury Warm Bronze & Adyen FinTech Deep Space) */

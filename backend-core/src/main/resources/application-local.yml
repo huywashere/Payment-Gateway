@@ -1,0 +1,45 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/payment_gateway}
+    username: ${SPRING_DATASOURCE_USERNAME:gateway_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:gateway_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+  flyway:
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+      timeout: 3000ms
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:gateway_user}
+    password: ${SPRING_RABBITMQ_PASSWORD:gateway_pass}
+    virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST:/}
+
+gateway:
+  security:
+    card-vault-master-key: ${GATEWAY_VAULT_KEY:ZGV2ZWxvcG1lbnQtb25seS12YXVsdC1rZXktMzIhISE=}
+    allowed-origins: ${GATEWAY_ALLOWED_ORIGINS:http://localhost:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

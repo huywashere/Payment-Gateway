@@ -3,8 +3,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  CreditCard,
-  QrCode,
   ShieldCheck,
   Lock,
   CheckCircle2,
@@ -14,9 +12,9 @@ import {
   Copy,
   Check,
   Clock,
-  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { VisaIcon, MastercardIcon, VietQrBadge } from '@/components/PaymentIcons';
 import { BankLogo } from '@/components/BankLogos';
 
@@ -49,7 +47,7 @@ function CheckoutContent() {
 
   useEffect(() => {
     if (session) {
-      fetch(`http://localhost:8080/v1/checkout/${session}`)
+      fetch(`/api/gateway/v1/checkout/${encodeURIComponent(session)}`)
         .then((res) => res.json())
         .then((data) => {
           if (data && data.amount) {
@@ -91,7 +89,7 @@ function CheckoutContent() {
     const expY = parts[1] ? 2000 + parseInt(parts[1], 10) : 2028;
 
     try {
-      const res = await fetch(`http://localhost:8080/v1/checkout/${session}/pay`, {
+      const res = await fetch(`/api/gateway/v1/checkout/${encodeURIComponent(session)}/pay`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -598,10 +596,12 @@ function CheckoutContent() {
                     </div>
                   </div>
 
-                  <img
+                  <Image
                     id="img-vietqr-code"
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=247PAY_${selectedBank}_${amount}_APIPAY8821`}
                     alt="VietQR Code"
+                    width={200}
+                    height={200}
                     style={{ width: '200px', height: '200px', margin: '0 auto', display: 'block', borderRadius: '8px' }}
                   />
 

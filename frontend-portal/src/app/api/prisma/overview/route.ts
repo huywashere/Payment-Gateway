@@ -8,11 +8,14 @@ export async function GET() {
         where: { id: '11111111-1111-1111-1111-111111111111' },
         include: {
           apiKeys: true,
-          ledgerAccounts: true,
+          ledgerAccounts: {
+            include: { debitEntries: true, creditEntries: true },
+          },
         },
       }),
-      prisma.paymentIntent.count(),
+      prisma.paymentIntent.count({ where: { merchantId: '11111111-1111-1111-1111-111111111111' } }),
       prisma.paymentIntent.findMany({
+        where: { merchantId: '11111111-1111-1111-1111-111111111111' },
         take: 10,
         orderBy: { createdAt: 'desc' },
       }),
@@ -25,9 +28,22 @@ export async function GET() {
 
     // Convert BigInt to Number for JSON serialization
     const serializedIntents = recentIntents.map((intent) => ({
-      ...intent,
+      id: intent.id,
       amount: Number(intent.amount),
+      currency: intent.currency,
+      status: intent.status,
+      description: intent.description ?? 'Thanh toán đơn hàng',
+      createdAt: intent.createdAt.toISOString(),
+      clientSecret: intent.clientSecret,
     }));
+
+    const ledgerAccounts = merchant?.ledgerAccounts.map((account) => ({
+      accountCode: account.accountCode,
+      accountName: account.accountName,
+      balance:
+        account.creditEntries.reduce((sum, entry) => sum + Number(entry.amount), 0) -
+        account.debitEntries.reduce((sum, entry) => sum + Number(entry.amount), 0),
+    })) ?? [];
 
     return NextResponse.json({
       success: true,
@@ -38,17 +54,13 @@ export async function GET() {
             businessName: merchant.businessName,
             email: merchant.email,
             apiKeysCount: merchant.apiKeys.length,
-            ledgerAccounts: merchant.ledgerAccounts.map((acc) => ({
-              code: acc.accountCode,
-              name: acc.accountName,
-              type: acc.accountType,
-            })),
           }
         : null,
+      ledgerAccounts,
       stats: {
         totalIntents: intentsCount,
-        outboxEvents: outboxCount,
-        recentWebhooks: recentDeliveries.length,
+        totalOutboxEvents: outboxCount,
+        totalWebhookDeliveries: recentDeliveries.length,
       },
       transactions: serializedIntents,
       deliveries: recentDeliveries,

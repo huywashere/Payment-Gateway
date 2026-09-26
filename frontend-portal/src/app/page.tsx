@@ -7,40 +7,15 @@ import {
   Check,
   Zap,
   ArrowRight,
-  ShieldCheck,
-  Lock,
-  RefreshCw,
-  Wallet,
-  TrendingUp,
-  Layers,
-  Sparkles,
-  CheckCircle2,
   Play,
   Pause,
-  ExternalLink,
   CreditCard,
   QrCode,
   Building,
 } from 'lucide-react';
 
-import { BankLogo } from '@/components/BankLogos';
-import { VisaIcon, MastercardIcon, VietQrBadge, AppiBotAvatar } from '@/components/PaymentIcons';
+import { AppiBotAvatar } from '@/components/PaymentIcons';
 import { AdyenMoneyMovementSection, AdyenPlatformsSection } from '@/components/AdyenShowcase';
-
-const SUPPORTED_BANKS = [
-  'ACB',
-  'MB',
-  'VIETCOMBANK',
-  'BIDV',
-  'TPBANK',
-  'VPBANK',
-  'TECHCOMBANK',
-  'SACOMBANK',
-  'VIETINBANK',
-  'VIB',
-  'MSB',
-  'OCB',
-];
 
 const CLIENT_BRANDS = [
   'Toast',
@@ -87,12 +62,11 @@ export default function HomePage() {
     ]);
 
     try {
-      const idemp = 'cli_adyen_' + Math.random().toString(36).substring(2, 8);
-      const res = await fetch('http://localhost:8080/v1/payment_intents', {
+      const idemp = `cli_adyen_${crypto.randomUUID()}`;
+      const res = await fetch('/api/gateway/v1/payment_intents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer sk_test_demo_gateway_key_999',
           'Idempotency-Key': idemp,
         },
         body: JSON.stringify({
@@ -108,9 +82,8 @@ export default function HomePage() {
           ...prev,
           `[200 OK] Created PaymentIntent: ${data.id}`,
           `✓ Client Secret: ${data.clientSecret.substring(0, 32)}...`,
-          `✓ Ledger: Nợ Tiền gửi thanh toán 500,000 / Có Số dư Khách 490,500 / Phí 9,500`,
-          `✓ RabbitMQ Outbox: Event published to 'payment.events.exchange'`,
-          '✓ Latency: 12ms via Java 23 Virtual Threads',
+          '✓ Trạng thái: REQUIRES_PAYMENT_METHOD',
+          '✓ Sẵn sàng mở Hosted Checkout để xác nhận thanh toán',
         ]);
       } else {
         setTerminalLogs((prev) => [...prev, 'Lỗi kết nối từ Gateway Engine']);
@@ -128,6 +101,7 @@ export default function HomePage() {
       {/* 1. HERO BANNER: EXACT ADYEN VIDEO HERO (Matching Screenshot 2)            */}
       {/* ========================================================================= */}
       <section
+        className="adyen-hero"
         style={{
           position: 'relative',
           width: '100%',
@@ -162,6 +136,7 @@ export default function HomePage() {
 
         {/* Ambient Dark Overlays matching Adyen */}
         <div
+          className="adyen-hero-content"
           style={{
             position: 'absolute',
             inset: 0,
@@ -186,6 +161,7 @@ export default function HomePage() {
         >
           {/* Spotlight Pill Badge (Matching Screenshot 2) */}
           <Link
+            className="adyen-spotlight"
             href="/dashboard"
             style={{
               display: 'inline-flex',
@@ -238,6 +214,7 @@ export default function HomePage() {
 
           {/* Big Headline (Matching Screenshot 2) */}
           <h1
+            className="adyen-hero-title"
             id="hero-main-title"
             style={{
               fontSize: 'clamp(2.8rem, 5.5vw, 4.4rem)',
@@ -253,6 +230,7 @@ export default function HomePage() {
 
           {/* Subtitle */}
           <p
+            className="adyen-hero-subtitle"
             style={{
               fontSize: '1.2rem',
               color: 'rgba(255, 255, 255, 0.75)',
@@ -265,7 +243,7 @@ export default function HomePage() {
           </p>
 
           {/* Center CTA Button (Matching Screenshot 2: Talk to our team) */}
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="adyen-hero-actions" style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'center' }}>
             <Link
               href="/checkout"
               id="btn-hero-talk"
@@ -318,6 +296,7 @@ export default function HomePage() {
 
         {/* Bottom Marquee of Client Logos (Matching Screenshot 2) */}
         <div
+          className="adyen-client-strip"
           style={{
             position: 'relative',
             zIndex: 2,
@@ -386,7 +365,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 2. SECTION MÀU TRẮNG: UNIFIED COMMERCE & 3 VALUE PILLARS (Clean White)    */}
       {/* ========================================================================= */}
-      <section className="section-white">
+      <section className="section-white reveal-on-scroll">
         <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
           {/* Section Header */}
           <div style={{ maxWidth: '840px', marginBottom: '56px' }}>
@@ -643,7 +622,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 4. SECTION SÁNG: HẠ TẦNG KỸ THUẬT & DEVELOPER TERMINAL (#f6f8fb)          */}
       {/* ========================================================================= */}
-      <section className="section-light">
+      <section className="section-light reveal-on-scroll">
         <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
           {/* Header */}
           <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 56px auto' }}>
@@ -949,7 +928,7 @@ export default function HomePage() {
         <AppiBotAvatar size={34} />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontSize: '0.65rem', color: '#0abf53', letterSpacing: '0.08em', fontWeight: 700 }}>
-            ADYEN CONCIERGE
+            APIPAY CONCIERGE
           </span>
           <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#ffffff' }}>
             Hỗ trợ kỹ thuật 24/7

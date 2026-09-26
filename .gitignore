@@ -11,6 +11,13 @@ dist/
 out/
 
 # Environment and sensitive files
+.env
+.env.*
+!.env.example
+!.env.*.example
+infra/environments/.env.dev
+infra/environments/.env.test
+infra/environments/.env.production
 .env*.local
 *.pem
 
@@ -24,6 +31,7 @@ out/
 .project
 .settings/
 .DS_Store
+.visual-check/
 Thumbs.db
 
 # Logs

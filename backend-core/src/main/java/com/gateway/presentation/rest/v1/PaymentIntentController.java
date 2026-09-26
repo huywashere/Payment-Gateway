@@ -48,6 +48,10 @@ public class PaymentIntentController {
             @PathVariable UUID id,
             @RequestBody ConfirmPaymentRequest request) {
 
+        UUID merchantId = (UUID) authentication.getPrincipal();
+        paymentIntentRepository.findById(id)
+                .filter(intent -> intent.getMerchantId().equals(merchantId))
+                .orElseThrow(() -> new IllegalArgumentException("PaymentIntent not found: " + id));
         PaymentIntentResponse response = paymentIntentService.confirmPaymentIntent(id, request);
         return ResponseEntity.ok(response);
     }
@@ -58,7 +62,9 @@ public class PaymentIntentController {
             Authentication authentication,
             @PathVariable UUID id) {
 
+        UUID merchantId = (UUID) authentication.getPrincipal();
         return paymentIntentRepository.findById(id)
+                .filter(intent -> intent.getMerchantId().equals(merchantId))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

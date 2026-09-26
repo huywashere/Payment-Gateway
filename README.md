@@ -48,34 +48,58 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
 
 ## 🚀 Hướng Dẫn Khởi Chạy
 
-### 1. Khởi động Hạ tầng Docker (PostgreSQL, Redis, RabbitMQ)
-```bash
-docker compose up -d
-```
-- PostgreSQL: `localhost:5433` (DB: `payment_gateway`, User: `gateway_user`, Pass: `gateway_pass`)
-- Redis: `localhost:6379`
-- RabbitMQ: `localhost:5672` (Management Dashboard: `http://localhost:15672` - User/Pass: `gateway_user`/`gateway_pass`)
+### 1. Khởi động toàn bộ stack bằng Docker
 
-### 2. Khởi chạy Backend Core (Spring Boot)
+```powershell
+Copy-Item infra/environments/.env.dev.example infra/environments/.env.dev
+# Thay các giá trị `change-me` và khóa vault mẫu trước khi dùng chung môi trường.
+docker compose --env-file infra/environments/.env.dev -f infra/compose/compose.dev.yml up -d --build
+```
+
+- Portal: `http://localhost:3000`
+- Backend Core: `http://localhost:8080`
+- Swagger: `http://localhost:8080/swagger-ui.html`
+- PostgreSQL: `localhost:5433`
+- Redis: `localhost:6379`
+- RabbitMQ Management: `http://localhost:15672`
+
+Chi tiết cấu trúc container, mạng nội bộ và test dependencies nằm trong [`infra/README.md`](infra/README.md).
+
+### 2. Chạy ứng dụng trực tiếp khi phát triển
+
+Khởi động dependencies bằng `docker-compose.yml` ở thư mục gốc, sau đó chạy Backend Core:
+
 ```bash
 cd backend-core
 ./mvnw spring-boot:run
 ```
-- Server chạy tại: `http://localhost:8080`
-- Swagger OpenAPI Docs: `http://localhost:8080/swagger-ui.html`
 
-### 3. Khởi chạy Frontend Portal (Next.js & Prisma)
+Frontend Portal:
+
 ```bash
 cd frontend-portal
 npm install
 npx prisma generate
 npm run dev
 ```
-- Truy cập Cổng thanh toán: `http://localhost:3000`
-- Merchant Dashboard: `http://localhost:3000/dashboard`
-- Hosted Checkout: `http://localhost:3000/checkout`
-- Demo Store: `http://localhost:3000/store`
-- Prisma Overview API: `http://localhost:3000/api/prisma/overview`
+### 3. Cấu hình môi trường
+
+Frontend gọi Backend Core qua BFF để không đưa secret key xuống trình duyệt:
+
+```env
+# frontend-portal/.env
+GATEWAY_CORE_URL=http://localhost:8080
+GATEWAY_DEMO_SECRET_KEY=sk_test_demo_gateway_key_999
+DATABASE_URL=postgresql://gateway_user:gateway_pass@localhost:5433/payment_gateway
+```
+
+Backend chỉ cho phép CORS từ portal đã khai báo (phân tách nhiều origin bằng dấu phẩy):
+
+```env
+GATEWAY_ALLOWED_ORIGINS=http://localhost:3000
+```
+
+Spring Boot mặc định dùng profile `local`. Container development dùng profile `docker`; production phải dùng profile `production`. Profile production không có fallback cho database, Redis, RabbitMQ, vault key hoặc allowed origins và sẽ từ chối khởi động nếu thiếu cấu hình bắt buộc. Không sử dụng file `.env.production.example` để lưu secret thật; secret production phải đến từ secret manager của môi trường triển khai.
 
 ---
 

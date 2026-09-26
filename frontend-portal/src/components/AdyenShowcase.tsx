@@ -2,74 +2,273 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Plus, Minus, ExternalLink, Move3d, ShieldCheck, Layers, CreditCard, Sparkles, Building, Landmark, ChevronRight } from 'lucide-react';
+import { ArrowRight, Move3d } from 'lucide-react';
 
 /**
- * Adyen Iconic Curved Particle Dome (Stippled dots hemisphere)
+ * =================================================================================
+ * ADYEN ICONIC EXPANSIVE PARTICLE DOME (TresJS / Three.js Canvas Replicated)
+ * Features matching Adyen.com original website:
+ * - Expansive, full-screen spanning height (580px+) rising from bottom edge
+ * - Over 1,500 particles arranged in concentric logarithmic radial dome arcs
+ * - Dual particle color palette: #5C6874 slate grey/starry white + #00D16A Adyen electric green glow
+ * - Scroll-driven elevation (particles rise up as user scrolls into the footer)
+ * - Magnetic Mouse Physics: particles warp, pull, and spring-recoil toward cursor
+ * - Starry organic twinkling & floating mathematical data glyphs (■ π, 1) N*(S)
+ * =================================================================================
  */
 export function AdyenParticleDome() {
-  const dots: { cx: number; cy: number; r: number; opacity: number }[] = [];
-  const width = 1200;
-  const height = 400;
-  const centerX = width / 2;
-  const centerY = height + 100;
-  const numRings = 16;
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mousePos = useRef({ x: -1000, y: -1000, active: false });
+  const scrollElevation = useRef(0);
 
-  for (let ring = 0; ring < numRings; ring++) {
-    const radius = 320 + ring * 14;
-    const count = 40 + ring * 6;
-    for (let i = 0; i < count; i++) {
-      const angle = (200 + (140 * i) / (count - 1)) * (Math.PI / 180);
-      const jitterR = Math.sin(ring * 13 + i * 7) * 4;
-      const jitterA = Math.cos(ring * 7 + i * 11) * 0.015;
-      const r = radius + jitterR;
-      const a = angle + jitterA;
-      const cx = centerX + r * Math.cos(a);
-      const cy = centerY + r * Math.sin(a) * 0.65;
-      if (cy > 0 && cy < height && cx > 0 && cx < width) {
-        const opacity = 0.2 + (Math.sin(i * 3 + ring) + 1) * 0.35;
-        const size = ring % 3 === 0 ? 1.8 : ring % 2 === 0 ? 1.4 : 1.0;
-        dots.push({ cx, cy, r: size, opacity });
-      }
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Track scroll elevation relative to footer
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // Calculate how far into footer user has scrolled (0 to 1)
+      const progress = Math.min(Math.max((vh - rect.top) / (vh * 0.7), 0), 1);
+      scrollElevation.current = progress;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    // Mouse tracking for Magnetic Interaction
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mousePos.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        active: true,
+      };
+    };
+
+    const handleMouseLeave = () => {
+      mousePos.current.active = false;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+
+    // Initialize 1,500 particles along concentric dome rings
+    interface Particle {
+      origX: number;
+      origY: number;
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      r: number;
+      isGreen: boolean;
+      opacity: number;
+      phase: number;
+      ringIndex: number;
     }
-  }
+
+    let particles: Particle[] = [];
+    const initParticles = (w: number, h: number) => {
+      particles = [];
+      const cx = w / 2;
+      const cy = h + 130; // Center below bottom to form wide planetary horizon
+      const numRings = 22;
+
+      for (let ring = 0; ring < numRings; ring++) {
+        const radius = 340 + ring * 22;
+        const count = 48 + ring * 6;
+
+        for (let i = 0; i < count; i++) {
+          // Angle spanning upper arc from 195 deg to 345 deg
+          const angle = (195 + (150 * i) / (count - 1)) * (Math.PI / 180);
+          const jitterR = Math.sin(ring * 17 + i * 11) * 6;
+          const jitterA = Math.cos(ring * 11 + i * 13) * 0.018;
+          const r = radius + jitterR;
+          const a = angle + jitterA;
+
+          // Elliptical flattening (y radius flattened to 0.68)
+          const px = cx + r * Math.cos(a);
+          const py = cy + r * Math.sin(a) * 0.68;
+
+          if (py > -20 && py < h + 80 && px > -40 && px < w + 40) {
+            const isGreen = (ring % 5 === 0 && i % 7 === 0) || (ring % 7 === 0 && i % 5 === 0);
+            const size = isGreen ? 2.8 : ring % 3 === 0 ? 1.9 : 1.3;
+            const baseOpacity = isGreen ? 0.95 : 0.2 + (Math.sin(i * 3 + ring) + 1) * 0.35;
+
+            particles.push({
+              origX: px,
+              origY: py,
+              x: px,
+              y: py + 80, // initially lower, rises with scroll
+              vx: 0,
+              vy: 0,
+              r: size,
+              isGreen,
+              opacity: baseOpacity,
+              phase: Math.random() * Math.PI * 2,
+              ringIndex: ring,
+            });
+          }
+        }
+      }
+    };
+
+    let animId: number;
+    let time = 0;
+    let currentElev = 0;
+
+    const render = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.parentElement ? canvas.parentElement.clientWidth : 1400;
+      const h = 580;
+
+      if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        initParticles(w, h);
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+
+      time += 0.02;
+
+      // Smooth scroll elevation lerp (Adyen scrollYProgress)
+      currentElev += (scrollElevation.current - currentElev) * 0.08;
+      const elevationOffset = (1 - currentElev) * 90;
+
+      const cx = w / 2;
+      // Ambient radial dome glow rising from the bottom center
+      const domeGlow = ctx.createRadialGradient(cx, h, 20, cx, h, 650);
+      domeGlow.addColorStop(0, 'rgba(10, 191, 83, 0.16)');
+      domeGlow.addColorStop(0.35, 'rgba(0, 209, 106, 0.06)');
+      domeGlow.addColorStop(0.7, 'rgba(0, 17, 44, 0.02)');
+      domeGlow.addColorStop(1, 'rgba(0, 17, 44, 0)');
+      ctx.fillStyle = domeGlow;
+      ctx.fillRect(0, 0, w, h);
+
+      // Update & Draw Particles with Magnetic Physics
+      const mx = mousePos.current.x;
+      const my = mousePos.current.y;
+      const mouseActive = mousePos.current.active;
+      const magneticRadius = 140;
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+
+        // Target position based on scroll elevation
+        const targetY = p.origY + elevationOffset;
+        const targetX = p.origX;
+
+        // Magnetic Attraction
+        if (mouseActive) {
+          const dx = mx - p.x;
+          const dy = my - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < magneticRadius && dist > 1) {
+            const force = (1 - dist / magneticRadius) * 22;
+            p.vx += (dx / dist) * force * 0.18;
+            p.vy += (dy / dist) * force * 0.18;
+          }
+        }
+
+        // Spring force returning to target position
+        p.vx += (targetX - p.x) * 0.08;
+        p.vy += (targetY - p.y) * 0.08;
+
+        // Velocity damping
+        p.vx *= 0.82;
+        p.vy *= 0.82;
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Starry twinkling opacity
+        const twinkle = Math.sin(time * 2 + p.phase) * 0.2;
+        const currentOpacity = Math.max(0.1, Math.min(1.0, p.opacity + twinkle));
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+
+        if (p.isGreen) {
+          ctx.fillStyle = '#00ff84';
+          ctx.shadowColor = '#00ff84';
+          ctx.shadowBlur = 8;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.fillStyle = `rgba(255, 255, 255, ${currentOpacity})`;
+          ctx.fill();
+        }
+      }
+
+      // Adyen Authentic Floating Mathematical & Financial Data Glyphs
+      // (Seen in original Adyen footer screenshot: ■ π, 1) N*(S)
+      const glyphX = cx + Math.sin(time * 0.5) * 40;
+      const glyphY = h - 160 + Math.cos(time * 0.7) * 15 - (currentElev * 30);
+
+      ctx.fillStyle = 'rgba(0, 255, 132, 0.75)';
+      ctx.font = 'bold 9px monospace';
+      ctx.fillText('■ π, 1) N*(S • NAPAS 24/7', glyphX + 60, glyphY);
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.font = '8px monospace';
+      ctx.fillText('∑ APIPAY VIRTUAL THREADS CORE', glyphX - 220, glyphY + 25);
+
+      // Bottom metallic horizon arc
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(cx, h + 240, 520, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.stroke();
+
+      ctx.restore();
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animId);
+    };
+  }, []);
 
   return (
     <div
+      ref={containerRef}
       style={{
         position: 'relative',
         width: '100%',
-        height: '320px',
+        minHeight: '580px',
+        height: '580px',
         overflow: 'hidden',
-        pointerEvents: 'none',
+        pointerEvents: 'auto',
         display: 'flex',
         justifyContent: 'center',
-        marginTop: '20px',
+        marginTop: '-20px',
       }}
     >
-      <svg
-        viewBox="0 0 1200 400"
-        preserveAspectRatio="xMidYMax meet"
-        style={{ width: '100%', height: '100%', maxWidth: '1400px' }}
-      >
-        <defs>
-          <radialGradient id="domeGlow" cx="50%" cy="100%" r="60%">
-            <stop offset="0%" stopColor="#0abf53" stopOpacity="0.12" />
-            <stop offset="60%" stopColor="#00112c" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <ellipse cx="600" cy="400" rx="550" ry="250" fill="url(#domeGlow)" />
-        {dots.map((d, idx) => (
-          <circle
-            key={idx}
-            cx={d.cx}
-            cy={d.cy}
-            r={d.r}
-            fill="#ffffff"
-            opacity={d.opacity}
-          />
-        ))}
-      </svg>
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          cursor: 'crosshair',
+        }}
+      />
     </div>
   );
 }
@@ -87,17 +286,14 @@ function createRingVertices(radius: number, pitch: number, yaw: number, roll: nu
     const y0 = radius * Math.sin(theta);
     const z0 = 0;
 
-    // Pitch (around X)
     const y1 = y0 * cosP - z0 * sinP;
     const z1 = y0 * sinP + z0 * cosP;
     const x1 = x0;
 
-    // Yaw (around Y)
     const x2 = x1 * cosY + z1 * sinY;
     const z2 = -x1 * sinY + z1 * cosY;
     const y2 = y1;
 
-    // Roll (around Z)
     const x3 = x2 * cosR - y2 * sinR;
     const y3 = x2 * sinR + y2 * cosR;
     const z3 = z2;
@@ -109,7 +305,6 @@ function createRingVertices(radius: number, pitch: number, yaw: number, roll: nu
 
 /**
  * Adyen Exact 3D Wireframe Rotating Sphere (Orbital Armillary Globe)
- * Built with pure Canvas 2D + 3D perspective projection.
  */
 export function AdyenGlobeOrbital() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -381,29 +576,6 @@ export function AdyenGlobeOrbital() {
     setTimeout(() => setIsInteracting(false), 800);
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length > 0) {
-      isDragging.current = true;
-      dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      setIsInteracting(true);
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging.current || e.touches.length === 0) return;
-    const dx = e.touches[0].clientX - dragStart.current.x;
-    const dy = e.touches[0].clientY - dragStart.current.y;
-    dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-
-    rotVel.current.y += dx * 0.006;
-    rotVel.current.x += dy * 0.006;
-  };
-
-  const handleTouchEnd = () => {
-    isDragging.current = false;
-    setTimeout(() => setIsInteracting(false), 800);
-  };
-
   return (
     <div
       style={{
@@ -414,17 +586,13 @@ export function AdyenGlobeOrbital() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        cursor: isDragging.current ? 'grabbing' : 'grab',
+        cursor: isInteracting ? 'grabbing' : 'grab',
         userSelect: 'none',
-        touchAction: 'none',
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       <canvas
         ref={canvasRef}
@@ -463,159 +631,349 @@ export function AdyenGlobeOrbital() {
 }
 
 /**
- * 3D Isometric Layered Stack (Rhombus Slabs)
- * Supports light & dark themes with floating architecture tags
+ * =================================================================================
+ * ADYEN EXACT ANIMATED 3D ISOMETRIC STACK (EmbeddedFinance Component Replicated)
+ * Features matching Adyen.com original website:
+ * - 18-slab tiered technology architecture (3 groups of 6 slabs with isometric projection)
+ * - Dynamic spring levitation: top tiers float weightlessly along the vertical central axis
+ * - Ping Pulse Ripple Effect (playPing): radiant #00D16A green rectangular outline pulse expands outward
+ * - Vertical Green Laser Guide Line with animated upward-traveling energy photons
+ * - Interactive Mouse Parallax & 3D Tilt: slabs gently shift in depth when hovering over the stack
+ * - Interactive linking with the 3 USE CASES cards on the right
+ * =================================================================================
  */
-export function AdyenIsometricStack({ theme = 'light' }: { theme?: 'light' | 'dark' }) {
-  const isLight = theme === 'light';
+export function AdyenIsometricStack({
+  activeTier = 1,
+  onHoverTier,
+}: {
+  activeTier?: number;
+  onHoverTier?: (tier: number) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mouseTilt = useRef({ x: 0, y: 0 });
+  const pingState = useRef({ active: true, scale: 1.0, opacity: 0.8 });
+  const photons = useRef([
+    { progress: 0.1, speed: 0.007 },
+    { progress: 0.45, speed: 0.009 },
+    { progress: 0.8, speed: 0.006 },
+  ]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Trigger Ping Pulse every 2.4 seconds matching Adyen playPing()
+    const pingInterval = setInterval(() => {
+      pingState.current = { active: true, scale: 1.0, opacity: 0.85 };
+    }, 2400);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      mouseTilt.current = {
+        x: (e.clientX - cx) * 0.035,
+        y: (e.clientY - cy) * 0.035,
+      };
+      const localY = ((e.clientY - rect.top) / rect.height) * 530;
+      onHoverTier?.(localY < 235 ? 1 : localY < 355 ? 2 : 3);
+    };
+
+    const handleMouseLeave = () => {
+      mouseTilt.current = { x: 0, y: 0 };
+    };
+
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+
+    let animId: number;
+    let time = 0;
+    let tiltLerpX = 0;
+    let tiltLerpY = 0;
+    let levitateSpring = 0;
+
+    const render = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const w = 540;
+      const h = 530;
+
+      if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+
+      time += 0.025;
+
+      // Mouse parallax smooth interpolation
+      tiltLerpX += (mouseTilt.current.x - tiltLerpX) * 0.08;
+      tiltLerpY += (mouseTilt.current.y - tiltLerpY) * 0.08;
+
+      // Spring-driven levitation for top tier group (Adyen ySpring)
+      const targetLevitate = Math.sin(time * 1.8) * 8;
+      levitateSpring += (targetLevitate - levitateSpring) * 0.1;
+
+      const cx = w / 2;
+      // Draw Vertical Green Laser Guide Line (#00D16A / #00ff84)
+      ctx.strokeStyle = 'rgba(0, 209, 106, 0.4)';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx + tiltLerpX * 0.1, 75);
+      ctx.lineTo(cx + tiltLerpX * 0.1, 440);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Traveling Energy Photons up the laser beam
+      photons.current.forEach((ph) => {
+        ph.progress = (ph.progress + ph.speed) % 1;
+        const photonY = 430 - ph.progress * 350;
+        const photonX = cx + tiltLerpX * 0.1;
+
+        ctx.fillStyle = '#00ff84';
+        ctx.shadowColor = '#00ff84';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(photonX, photonY, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Trail
+        ctx.strokeStyle = 'rgba(0, 255, 132, 0.5)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(photonX, photonY);
+        ctx.lineTo(photonX, photonY + 12);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      });
+
+      // Helper function to draw an isometric rhombus slab
+      const drawRhombus = (
+        x: number,
+        y: number,
+        rx: number,
+        ry: number,
+        fillColor: string | CanvasGradient | CanvasPattern,
+        strokeColor: string,
+        lineWidth = 1.2
+      ) => {
+        ctx.beginPath();
+        ctx.moveTo(x, y - ry);
+        ctx.lineTo(x + rx, y);
+        ctx.lineTo(x, y + ry);
+        ctx.lineTo(x - rx, y);
+        ctx.closePath();
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      };
+
+      // -------------------------------------------------------------
+      // 1. BASE LAYER: ADYEN ELECTRIC GREEN EMBEDDED FINANCE CORE
+      // -------------------------------------------------------------
+      const baseY = 410;
+      const baseGrad = ctx.createLinearGradient(cx - 130, baseY, cx + 130, baseY);
+      baseGrad.addColorStop(0, 'rgba(10, 191, 83, 0.28)');
+      baseGrad.addColorStop(1, 'rgba(0, 17, 44, 0.08)');
+
+      drawRhombus(
+        cx + tiltLerpX * 0.2,
+        baseY,
+        130,
+        65,
+        baseGrad,
+        activeTier === 3 ? '#00ff84' : '#00D16A',
+        activeTier === 3 ? 3 : 2.2
+      );
+
+      // Central Emerald Diamond
+      ctx.fillStyle = '#00ff84';
+      ctx.shadowColor = '#00ff84';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(cx + tiltLerpX * 0.2, baseY - 5);
+      ctx.lineTo(cx + tiltLerpX * 0.2 + 5, baseY);
+      ctx.lineTo(cx + tiltLerpX * 0.2, baseY + 5);
+      ctx.lineTo(cx + tiltLerpX * 0.2 - 5, baseY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // -------------------------------------------------------------
+      // 2. MIDDLE PLATFORM LAYER: EXPANDED TRANSLUCENT RHOMBUS
+      // -------------------------------------------------------------
+      const midY = 300 + (Math.sin(time * 1.5) * 3);
+      drawRhombus(
+        cx + tiltLerpX * 0.4,
+        midY,
+        125,
+        62,
+        'rgba(0, 17, 44, 0.08)',
+        activeTier === 2 ? '#00D16A' : 'rgba(255,255,255,.88)',
+        activeTier === 2 ? 2.6 : 1.6
+      );
+
+      // Diamond node on middle layer
+      ctx.fillStyle = '#00112c';
+      ctx.beginPath();
+      ctx.moveTo(cx + tiltLerpX * 0.4, midY - 4);
+      ctx.lineTo(cx + tiltLerpX * 0.4 + 4, midY);
+      ctx.lineTo(cx + tiltLerpX * 0.4, midY + 4);
+      ctx.lineTo(cx + tiltLerpX * 0.4 - 4, midY);
+      ctx.closePath();
+      ctx.fill();
+
+      // -------------------------------------------------------------
+      // 3. TOP TIER GROUP: 6 OBSIDIAN LEVITATING SLABS (API & Apps)
+      // Levitate smoothly with levitateSpring + mouse parallax
+      // -------------------------------------------------------------
+      const topGroupBaseY = 160 + levitateSpring;
+      const slabCount = 6;
+      const slabSpacing = 14;
+
+      for (let i = slabCount - 1; i >= 0; i--) {
+        const slabY = topGroupBaseY - i * slabSpacing;
+        const depthFactor = 0.5 + (slabCount - i) * 0.1;
+        const slabX = cx + tiltLerpX * depthFactor;
+
+        // Colors gradient from obsidian to rich navy
+        const fillC = 'rgba(0, 17, 44, 0.1)';
+        const strokeC = activeTier === 1 ? '#00D16A' : i === 0 ? 'rgba(255,255,255,.62)' : 'rgba(143,160,190,.55)';
+
+        drawRhombus(slabX, slabY, 85, 42, fillC, strokeC, i === 0 ? 1.5 : 1.0);
+      }
+
+      // -------------------------------------------------------------
+      // 4. PING PULSE RIPPLE EFFECT (playPing)
+      // Outline rhombus radiating outward from the active layer
+      // -------------------------------------------------------------
+      if (pingState.current.active) {
+        const ping = pingState.current;
+        ping.scale += 0.012;
+        ping.opacity -= 0.02;
+
+        if (ping.opacity <= 0) {
+          ping.active = false;
+        } else {
+          ctx.save();
+          ctx.strokeStyle = `rgba(0, 209, 106, ${ping.opacity})`;
+          ctx.lineWidth = 1.8;
+          ctx.shadowColor = '#00ff84';
+          ctx.shadowBlur = 10;
+
+          const pingRx = 85 * ping.scale;
+          const pingRy = 42 * ping.scale;
+          const pingY = topGroupBaseY - (slabCount - 1) * slabSpacing;
+          const pingX = cx + tiltLerpX * 0.8;
+
+          ctx.beginPath();
+          ctx.moveTo(pingX, pingY - pingRy);
+          ctx.lineTo(pingX + pingRx, pingY);
+          ctx.lineTo(pingX, pingY + pingRy);
+          ctx.lineTo(pingX - pingRx, pingY);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // Architecture tier pointer annotations
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px monospace';
+
+      // Tier 1 annotation
+      const t1Y = topGroupBaseY - 30;
+      ctx.strokeStyle = '#0abf53';
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(cx + 90, t1Y);
+      ctx.lineTo(cx + 140, t1Y);
+      ctx.stroke();
+      ctx.fillText('Giao diện API & Apps', cx + 146, t1Y + 4);
+
+      // Tier 2 annotation
+      ctx.beginPath();
+      ctx.moveTo(cx + 130, midY);
+      ctx.lineTo(cx + 160, midY);
+      ctx.stroke();
+      ctx.fillText('Sổ Cái Kép & Split Engine', cx + 166, midY + 4);
+
+      // Tier 3 annotation
+      ctx.beginPath();
+      ctx.moveTo(cx + 135, baseY);
+      ctx.lineTo(cx + 165, baseY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#0abf53';
+      ctx.fillText('Lõi Embedded Finance Core', cx + 171, baseY + 4);
+
+      ctx.restore();
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+
+    return () => {
+      clearInterval(pingInterval);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
+      cancelAnimationFrame(animId);
+    };
+  }, [activeTier, onHoverTier]);
 
   return (
     <div
       style={{
         position: 'relative',
         width: '100%',
-        minHeight: '520px',
+        minHeight: '530px',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
+        userSelect: 'none',
       }}
     >
-      <svg
-        viewBox="0 0 540 520"
-        style={{ width: '100%', height: '100%', maxWidth: '540px', overflow: 'visible' }}
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: '540px',
+          height: '530px',
+          maxWidth: '100%',
+          display: 'block',
+          cursor: 'pointer',
+        }}
+      />
+
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'rgba(3, 21, 51, 0.88)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          padding: '6px 14px',
+          borderRadius: '999px',
+          fontSize: '0.74rem',
+          fontFamily: 'monospace',
+          color: '#ffffff',
+          boxShadow: '0 4px 14px rgba(0, 17, 44, 0.06)',
+          pointerEvents: 'none',
+        }}
       >
-        <defs>
-          <linearGradient id="slabGlowLight" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#0abf53" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#00112c" stopOpacity="0.05" />
-          </linearGradient>
-          <linearGradient id="slabGlowDark" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#0abf53" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#00112c" stopOpacity="0.05" />
-          </linearGradient>
-        </defs>
-
-        {/* Central Vertical Alignment Guide Line */}
-        <line
-          x1="270"
-          y1="80"
-          x2="270"
-          y2="430"
-          stroke={isLight ? 'rgba(0, 17, 44, 0.15)' : 'rgba(255, 255, 255, 0.15)'}
-          strokeWidth="1.2"
-          strokeDasharray="4 3"
-        />
-
-        {/* Stack Layer 1 (Topmost - Storefront & Client Apps) */}
-        <g transform="translate(20, 0)">
-          <path
-            d="M250 110 L330 155 L250 200 L170 155 Z"
-            fill={isLight ? '#091b35' : '#091b35'}
-            stroke={isLight ? 'rgba(0, 17, 44, 0.35)' : 'rgba(255, 255, 255, 0.25)'}
-            strokeWidth="1.2"
-          />
-        </g>
-
-        {/* Stack Layer 2 */}
-        <g transform="translate(20, 16)">
-          <path
-            d="M250 110 L330 155 L250 200 L170 155 Z"
-            fill={isLight ? '#0c2344' : '#06162d'}
-            stroke={isLight ? 'rgba(0, 17, 44, 0.3)' : 'rgba(255, 255, 255, 0.2)'}
-            strokeWidth="1"
-          />
-        </g>
-
-        {/* Stack Layer 3 */}
-        <g transform="translate(20, 32)">
-          <path
-            d="M250 110 L330 155 L250 200 L170 155 Z"
-            fill={isLight ? '#102c54' : '#051326'}
-            stroke={isLight ? 'rgba(0, 17, 44, 0.25)' : 'rgba(255, 255, 255, 0.18)'}
-            strokeWidth="1"
-          />
-        </g>
-
-        {/* Stack Layer 4 */}
-        <g transform="translate(20, 48)">
-          <path
-            d="M250 110 L330 155 L250 200 L170 155 Z"
-            fill={isLight ? '#143666' : '#040f20'}
-            stroke={isLight ? 'rgba(0, 17, 44, 0.2)' : 'rgba(255, 255, 255, 0.15)'}
-            strokeWidth="1"
-          />
-        </g>
-
-        {/* Stack Layer 5 */}
-        <g transform="translate(20, 64)">
-          <path
-            d="M250 110 L330 155 L250 200 L170 155 Z"
-            fill={isLight ? '#194179' : '#030c1b'}
-            stroke={isLight ? 'rgba(0, 17, 44, 0.18)' : 'rgba(255, 255, 255, 0.12)'}
-            strokeWidth="1"
-          />
-        </g>
-
-        {/* Middle Platform Layer (Large Expanded Rhombus) */}
-        <g transform="translate(20, 120)">
-          <path
-            d="M250 130 L370 198 L250 266 L130 198 Z"
-            fill={isLight ? 'rgba(255, 255, 255, 0.85)' : '#041328'}
-            stroke={isLight ? '#00112c' : 'rgba(255, 255, 255, 0.45)'}
-            strokeWidth="1.6"
-          />
-          <polygon
-            points="250,194 254,198 250,202 246,198"
-            fill={isLight ? '#00112c' : '#ffffff'}
-          />
-        </g>
-
-        {/* Active Connector Beam between middle and base layer */}
-        <line
-          x1="270"
-          y1="318"
-          x2="270"
-          y2="395"
-          stroke="#0abf53"
-          strokeWidth="2"
-        />
-
-        {/* Base Layer: ADYEN ELECTRIC GREEN EMBEDDED FINANCE CORE */}
-        <g transform="translate(20, 220)">
-          <path
-            d="M250 130 L370 198 L250 266 L130 198 Z"
-            fill={isLight ? 'url(#slabGlowLight)' : 'url(#slabGlowDark)'}
-            stroke="#0abf53"
-            strokeWidth="2.2"
-          />
-          <polygon
-            points="250,194 254,198 250,202 246,198"
-            fill="#00ff84"
-          />
-        </g>
-
-        {/* Annotations along the architecture stack */}
-        <g transform="translate(390, 175)">
-          <line x1="-30" y1="0" x2="0" y2="0" stroke="#0abf53" strokeWidth="1" strokeDasharray="2 2" />
-          <text x="6" y="4" fill={isLight ? '#00112c' : '#ffffff'} fontSize="10" fontFamily="monospace" fontWeight="bold">
-            Giao diện API & Apps
-          </text>
-        </g>
-
-        <g transform="translate(410, 318)">
-          <line x1="-30" y1="0" x2="0" y2="0" stroke="#0abf53" strokeWidth="1" strokeDasharray="2 2" />
-          <text x="6" y="4" fill={isLight ? '#00112c' : '#ffffff'} fontSize="10" fontFamily="monospace" fontWeight="bold">
-            Sổ cái kép & Split Engine
-          </text>
-        </g>
-
-        <g transform="translate(410, 420)">
-          <line x1="-30" y1="0" x2="0" y2="0" stroke="#0abf53" strokeWidth="1" strokeDasharray="2 2" />
-          <text x="6" y="4" fill="#0abf53" fontSize="10" fontFamily="monospace" fontWeight="bold">
-            Lõi Embedded Finance
-          </text>
-        </g>
-      </svg>
+        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0abf53' }} />
+        <span>RÊ CHUỘT ĐỂ XOAY NGHIÊNG 3D • HIỆU ỨNG LEVITATION TỰ ĐỘNG</span>
+      </div>
     </div>
   );
 }
@@ -624,16 +982,13 @@ export function AdyenIsometricStack({ theme = 'light' }: { theme?: 'light' | 'da
  * =================================================================================
  * PHẦN 1: QUẢ CẦU 3D & LUÂN CHUYỂN DÒNG TIỀN (INTELLIGENT MONEY MOVEMENT)
  * Background: Adyen Midnight Navy (#00112c)
- * Features:
- * - 3D Rotating Sphere with scroll momentum and drag interaction
- * - Glowing Adyen Electric Green active orbit with live transaction badges
- * - Dedicated layout for Intelligent Money Movement
  * =================================================================================
  */
 export function AdyenMoneyMovementSection() {
   return (
     <section
       id="intelligent-money-movement"
+      className="adyen-money-section reveal-on-scroll"
       style={{
         backgroundColor: '#00112c',
         borderTop: '1px solid rgba(255, 255, 255, 0.08)',
@@ -645,6 +1000,7 @@ export function AdyenMoneyMovementSection() {
       }}
     >
       <div
+        className="adyen-money-grid"
         style={{
           maxWidth: '1360px',
           margin: '0 auto',
@@ -664,6 +1020,7 @@ export function AdyenMoneyMovementSection() {
         {/* Right Column: Intelligent Money Movement Dedicated Panel */}
         <div>
           <div
+            className="adyen-money-panel"
             style={{
               background: '#041328',
               border: '1px solid rgba(255, 255, 255, 0.09)',
@@ -672,7 +1029,6 @@ export function AdyenMoneyMovementSection() {
               boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
             }}
           >
-            {/* Tag Pill */}
             <div
               style={{
                 fontSize: '0.74rem',
@@ -744,7 +1100,6 @@ export function AdyenMoneyMovementSection() {
               <ArrowRight size={16} />
             </Link>
 
-            {/* USE CASES List matching Adyen exact screenshot */}
             <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '24px' }}>
               <div
                 style={{
@@ -827,26 +1182,27 @@ export function AdyenMoneyMovementSection() {
 /**
  * =================================================================================
  * PHẦN 2: KIẾN TRÚC XẾP TẦNG 3D & NỀN TẢNG DOANH NGHIỆP (ADYEN FOR PLATFORMS)
- * Background: Clean White (#ffffff) for crisp alternating contrast
- * Features:
- * - 3D Isometric Stack with dark slabs & emerald connector
- * - Dedicated layout for Embedded Finance & SaaS Platforms
+ * Background: Clean White (#ffffff)
  * =================================================================================
  */
 export function AdyenPlatformsSection() {
+  const [activeTier, setActiveTier] = useState(1);
+
   return (
     <section
       id="adyen-for-platforms"
-      className="section-white"
+      className="adyen-platform-section reveal-on-scroll"
       style={{
         borderTop: '1px solid rgba(0, 17, 44, 0.08)',
         borderBottom: '1px solid rgba(0, 17, 44, 0.08)',
         padding: '90px 32px 110px 32px',
         position: 'relative',
-        backgroundColor: '#ffffff',
+        backgroundColor: '#00112c',
       }}
     >
+      <div className="adyen-platform-rail" aria-hidden="true"><b>1</b><span><i /></span><b>2</b></div>
       <div
+        className="adyen-platform-grid"
         style={{
           maxWidth: '1360px',
           margin: '0 auto',
@@ -856,23 +1212,23 @@ export function AdyenPlatformsSection() {
           alignItems: 'center',
         }}
       >
-        {/* Left Column: 3D Isometric Layered Stack */}
+        {/* Left Column: 3D Isometric Layered Stack with Levitation & Ping Pulse */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <AdyenIsometricStack theme="light" />
+          <AdyenIsometricStack activeTier={activeTier} onHoverTier={setActiveTier} />
         </div>
 
         {/* Right Column: Platforms & Embedded Finance Details */}
         <div>
           <div
+            className="adyen-platform-panel"
             style={{
-              background: '#ffffff',
-              border: '1px solid rgba(0, 17, 44, 0.1)',
+              background: 'transparent',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
               borderRadius: '16px',
               padding: '42px 38px',
               boxShadow: '0 20px 45px rgba(0, 17, 44, 0.06)',
             }}
           >
-            {/* Tag Pill */}
             <div
               style={{
                 fontSize: '0.74rem',
@@ -895,7 +1251,7 @@ export function AdyenPlatformsSection() {
               style={{
                 fontSize: 'clamp(2rem, 3.2vw, 2.7rem)',
                 fontWeight: 800,
-                color: '#00112c',
+                color: '#ffffff',
                 lineHeight: 1.18,
                 letterSpacing: '-0.025em',
                 marginBottom: '16px',
@@ -917,7 +1273,7 @@ export function AdyenPlatformsSection() {
 
             <p
               style={{
-                color: '#475569',
+                color: '#d4dbe5',
                 fontSize: '0.98rem',
                 lineHeight: 1.65,
                 marginBottom: '28px',
@@ -934,7 +1290,7 @@ export function AdyenPlatformsSection() {
                 gap: '8px',
                 fontSize: '0.95rem',
                 fontWeight: 700,
-                color: '#00112c',
+                color: '#ffffff',
                 marginBottom: '38px',
                 textDecoration: 'none',
               }}
@@ -943,8 +1299,8 @@ export function AdyenPlatformsSection() {
               <ArrowRight size={16} color="#0abf53" />
             </Link>
 
-            {/* USE CASES List in Light Theme */}
-            <div style={{ borderTop: '1px solid rgba(0, 17, 44, 0.08)', paddingTop: '24px' }}>
+            {/* USE CASES List with interactive hover linking to 3D stack */}
+            <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.14)', paddingTop: '24px' }}>
               <div
                 style={{
                   fontSize: '0.7rem',
@@ -956,12 +1312,13 @@ export function AdyenPlatformsSection() {
                   textTransform: 'uppercase',
                 }}
               >
-                USE CASES • TRƯỜNG HỢP SỬ DỤNG
+                USE CASES • TRƯỜNG HỢP SỬ DỤNG (RÊ CHUỘT ĐỂ XEM HIỆU ỨNG TẦNG)
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <Link
                   href="/checkout"
+                  onMouseEnter={() => setActiveTier(1)}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -972,10 +1329,9 @@ export function AdyenPlatformsSection() {
                     paddingBottom: '14px',
                     borderBottom: '1px solid rgba(0, 17, 44, 0.05)',
                     textDecoration: 'none',
-                    transition: 'color 0.15s ease',
+                    transition: 'all 0.2s ease',
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.color = '#0abf53')}
-                  onMouseOut={(e) => (e.currentTarget.style.color = '#00112c')}
+                  className="adyen-usecase"
                 >
                   <span>Thanh toán nhúng trong nền tảng (Embedded Payments)</span>
                   <ArrowRight size={16} color="#0abf53" />
@@ -983,6 +1339,7 @@ export function AdyenPlatformsSection() {
 
                 <Link
                   href="/dashboard"
+                  onMouseEnter={() => setActiveTier(2)}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -993,10 +1350,9 @@ export function AdyenPlatformsSection() {
                     paddingBottom: '14px',
                     borderBottom: '1px solid rgba(0, 17, 44, 0.05)',
                     textDecoration: 'none',
-                    transition: 'color 0.15s ease',
+                    transition: 'all 0.2s ease',
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.color = '#0abf53')}
-                  onMouseOut={(e) => (e.currentTarget.style.color = '#00112c')}
+                  className="adyen-usecase"
                 >
                   <span>Tài trợ vốn & Tín dụng doanh nghiệp (Embedded Lending)</span>
                   <ArrowRight size={16} color="#0abf53" />
@@ -1004,6 +1360,7 @@ export function AdyenPlatformsSection() {
 
                 <Link
                   href="/dashboard"
+                  onMouseEnter={() => setActiveTier(3)}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -1012,10 +1369,9 @@ export function AdyenPlatformsSection() {
                     fontWeight: 600,
                     color: '#00112c',
                     textDecoration: 'none',
-                    transition: 'color 0.15s ease',
+                    transition: 'all 0.2s ease',
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.color = '#0abf53')}
-                  onMouseOut={(e) => (e.currentTarget.style.color = '#00112c')}
+                  className="adyen-usecase"
                 >
                   <span>Tài khoản doanh nghiệp & Thẻ ảo (Accounts & Cards)</span>
                   <ArrowRight size={16} color="#0abf53" />
