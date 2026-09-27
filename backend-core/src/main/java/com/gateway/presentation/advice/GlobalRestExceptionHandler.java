@@ -7,10 +7,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalRestExceptionHandler {
 
     @ExceptionHandler(IdempotencyConflictException.class)
@@ -73,13 +77,27 @@ public class GlobalRestExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "error", Map.of(
+                        "type", "validation_error",
+                        "code", "parameter_missing_or_invalid",
+                        "message", "Request validation failed"
+                )
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+        String requestId = MDC.get("requestId");
+        log.error("Unhandled API exception for request {}", requestId, ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "error", Map.of(
                         "type", "api_error",
                         "code", "internal_server_error",
-                        "message", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred"
+                        "message", "An unexpected error occurred",
+                        "request_id", requestId == null ? "unknown" : requestId
                 )
         ));
     }

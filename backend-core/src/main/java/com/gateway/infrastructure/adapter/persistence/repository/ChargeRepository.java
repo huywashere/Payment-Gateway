@@ -15,6 +15,9 @@ public interface ChargeRepository extends JpaRepository<ChargeEntity, UUID> {
     List<ChargeEntity> findByPaymentIntentId(UUID paymentIntentId);
     Optional<ChargeEntity> findByIdAndMerchantId(UUID id, UUID merchantId);
     Optional<ChargeEntity> findByMerchantIdAndProcessorTxId(UUID merchantId, String processorTxId);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM ChargeEntity c WHERE c.processorTxId = :processorTxId")
+    Optional<ChargeEntity> findByProcessorTxIdForUpdate(@Param("processorTxId") String processorTxId);
     List<ChargeEntity> findByMerchantIdAndStatusInAndCreatedAtLessThanEqualOrderByCreatedAtAsc(
             UUID merchantId, List<String> statuses, OffsetDateTime cutoff);
 

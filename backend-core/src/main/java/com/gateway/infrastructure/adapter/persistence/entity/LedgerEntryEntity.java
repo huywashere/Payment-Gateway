@@ -35,6 +35,9 @@ public class LedgerEntryEntity {
     @Column(name = "dispute_id")
     private UUID disputeId;
 
+    @Column(name = "entry_type", nullable = false, length = 50)
+    private String entryType;
+
     @Column(name = "debit_account_id", nullable = false)
     private UUID debitAccountId;
 

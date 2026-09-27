@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -24,6 +25,9 @@ public class CheckoutController {
 
     private final PaymentIntentRepository paymentIntentRepository;
     private final PaymentIntentService paymentIntentService;
+
+    @Value("${gateway.mode:sandbox}")
+    private String gatewayMode;
 
     @GetMapping("/{clientSecret}")
     @Operation(summary = "Load session info for Checkout UI using Client Secret")
@@ -62,6 +66,7 @@ public class CheckoutController {
     public ResponseEntity<PaymentIntentResponse> completeSandboxPayment(
             @PathVariable String clientSecret,
             @Valid @RequestBody SandboxCheckoutRequest request) {
+        ensureSandbox();
         return ResponseEntity.ok(paymentIntentService.confirmSandbox(clientSecret, request));
     }
 
@@ -70,7 +75,14 @@ public class CheckoutController {
     public ResponseEntity<PaymentIntentResponse> completeSandboxAction(
             @PathVariable String clientSecret,
             @RequestBody Map<String, Boolean> request) {
+        ensureSandbox();
         return ResponseEntity.ok(paymentIntentService.completeRequiredAction(
                 clientSecret, Boolean.TRUE.equals(request.get("success"))));
+    }
+
+    private void ensureSandbox() {
+        if (!"sandbox".equalsIgnoreCase(gatewayMode)) {
+            throw new IllegalStateException("Sandbox checkout endpoints are disabled in live mode");
+        }
     }
 }

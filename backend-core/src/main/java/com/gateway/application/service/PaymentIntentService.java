@@ -9,11 +9,13 @@ import com.gateway.infrastructure.adapter.persistence.entity.*;
 import com.gateway.infrastructure.adapter.persistence.repository.*;
 import com.gateway.infrastructure.adapter.processor.BankProcessor;
 import com.gateway.infrastructure.adapter.redis.IdempotencyManager;
-import com.gateway.infrastructure.adapter.security.AesGcmVaultService;
+import com.gateway.infrastructure.adapter.security.PaymentMetadataVault;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -30,10 +32,14 @@ public class PaymentIntentService {
     private final LedgerService ledgerService;
     private final OutboxService outboxService;
     private final AuditService auditService;
-    private final AesGcmVaultService vaultService;
+    private final PaymentMetadataVault vaultService;
     private final IdempotencyManager idempotencyManager;
     private final ObjectMapper objectMapper;
     private final RiskService riskService;
+    private final MeterRegistry meterRegistry;
+
+    @Value("${gateway.mode:sandbox}")
+    private String gatewayMode;
 
     @Transactional
     public PaymentIntentResponse createPaymentIntent(UUID merchantId, String idempotencyKey,
@@ -96,6 +102,7 @@ public class PaymentIntentService {
         }
         RiskService.RiskDecision risk = riskService.evaluate(intent);
         if ("BLOCK".equals(risk.decision())) {
+            meterRegistry.counter("gateway_payment_outcomes_total", "outcome", "risk_blocked").increment();
             intent.setStatus(PaymentIntentStatus.FAILED);
             intent.setLastErrorCode("risk_blocked");
             paymentIntentRepository.save(intent);
@@ -112,6 +119,8 @@ public class PaymentIntentService {
         PaymentMaterial material = preparePaymentMethod(intent, request);
         BankProcessor.BankProcessResponse result = bankProcessor.processPayment(
                 BankProcessor.BankProcessRequest.builder()
+                        .operationId(intent.getId().toString())
+                        .processorPaymentMethodToken(material.processorToken())
                         .rawCardNumber(material.rawCardNumber()).cardHolderName(material.holderName())
                         .expMonth(material.expMonth()).expYear(material.expYear()).cvv(material.cvc())
                         .paymentMethodType(material.type()).scenario(material.scenario())
@@ -122,20 +131,30 @@ public class PaymentIntentService {
         String nextActionUrl = null;
         ChargeEntity charge = null;
         if (result.isSuccess()) {
+            meterRegistry.counter("gateway_payment_outcomes_total", "outcome", "succeeded").increment();
             charge = captureSuccessfulPayment(intent, material.paymentMethod(), result.getProcessorTransactionId(), material.type());
         } else if (result.isRequiresAction()) {
+            meterRegistry.counter("gateway_payment_outcomes_total", "outcome", "requires_action").increment();
             intent.setStatus(PaymentIntentStatus.REQUIRES_ACTION);
             nextActionUrl = result.getActionUrl();
+            charge = chargeRepository.save(ChargeEntity.builder()
+                    .paymentIntentId(intent.getId()).merchantId(merchantId)
+                    .paymentMethodId(material.paymentMethod() == null ? null : material.paymentMethod().getId())
+                    .amount(intent.getAmount()).feeAmount(ledgerService.calculateFee(intent.getAmount()))
+                    .currency(intent.getCurrency()).processorTxId(result.getProcessorTransactionId())
+                    .processorCode(bankProcessor.processorCode(material.type())).status("PENDING").build());
             outboxService.enqueue(merchantId, "PAYMENT_INTENT", intent.getId(), "payment_intent.requires_action",
                     paymentEventData(intent));
         } else {
+            meterRegistry.counter("gateway_payment_outcomes_total", "outcome", "processor_failed").increment();
             intent.setStatus(PaymentIntentStatus.FAILED);
             intent.setLastErrorCode(result.getErrorCode());
             failureMessage = result.getErrorMessage();
             charge = chargeRepository.save(ChargeEntity.builder()
                     .paymentIntentId(intent.getId()).merchantId(merchantId)
                     .paymentMethodId(material.paymentMethod() == null ? null : material.paymentMethod().getId())
-                    .amount(intent.getAmount()).currency(intent.getCurrency()).processorCode("MOCK_" + material.type())
+                    .amount(intent.getAmount()).currency(intent.getCurrency())
+                    .processorCode(bankProcessor.processorCode(material.type()))
                     .status("FAILED").failureMessage(failureMessage).build());
             outboxService.enqueue(merchantId, "PAYMENT_INTENT", intent.getId(), "payment_intent.payment_failed",
                     paymentEventData(intent));
@@ -197,12 +216,18 @@ public class PaymentIntentService {
                                                   String processorTransactionId, String methodType) {
         intent.setStatus(PaymentIntentStatus.SUCCEEDED);
         long fee = ledgerService.calculateFee(intent.getAmount());
-        ChargeEntity charge = chargeRepository.save(ChargeEntity.builder()
-                .paymentIntentId(intent.getId()).merchantId(intent.getMerchantId())
-                .paymentMethodId(paymentMethod == null ? null : paymentMethod.getId())
-                .amount(intent.getAmount()).feeAmount(fee).currency(intent.getCurrency())
-                .processorTxId(processorTransactionId).processorCode("MOCK_" + methodType)
-                .status("SUCCEEDED").build());
+        ChargeEntity charge = chargeRepository.findByPaymentIntentId(intent.getId()).stream()
+                .filter(candidate -> "PENDING".equals(candidate.getStatus()))
+                .findFirst().orElseGet(() -> ChargeEntity.builder()
+                        .paymentIntentId(intent.getId()).merchantId(intent.getMerchantId()).build());
+        charge.setPaymentMethodId(paymentMethod == null ? null : paymentMethod.getId());
+        charge.setAmount(intent.getAmount());
+        charge.setFeeAmount(fee);
+        charge.setCurrency(intent.getCurrency());
+        if (charge.getProcessorTxId() == null) charge.setProcessorTxId(processorTransactionId);
+        charge.setProcessorCode(bankProcessor.processorCode(methodType));
+        charge.setStatus("SUCCEEDED");
+        charge = chargeRepository.save(charge);
         ledgerService.recordPaymentSucceeded(charge);
         outboxService.enqueue(intent.getMerchantId(), "PAYMENT_INTENT", intent.getId(),
                 "payment_intent.succeeded", paymentEventData(intent));
@@ -212,15 +237,20 @@ public class PaymentIntentService {
     private PaymentMaterial preparePaymentMethod(PaymentIntentEntity intent, ConfirmPaymentRequest request) {
         String type = request.getPaymentMethodType() == null ? "CARD" : request.getPaymentMethodType().toUpperCase(Locale.ROOT);
         String scenario = request.getScenario() == null ? "success" : request.getScenario().toLowerCase(Locale.ROOT);
+        if ("live".equalsIgnoreCase(gatewayMode)
+                && (request.getCard() != null || request.getPaymentMethodId() == null)) {
+            throw new IllegalArgumentException(
+                    "Live payments require an opaque processor payment-method token; raw card data is prohibited");
+        }
         if ("VIETQR".equals(type)) {
             PaymentMethodEntity method = createSandboxMethod(intent, "VIETQR", "N/A", null, null, scenario, null);
-            return new PaymentMaterial(method, type, scenario, null, null, null, null, null);
+            return new PaymentMaterial(method, type, scenario, method.getProcessorToken(), null, null, null, null, null);
         }
         if ("CARD".equals(type) && request.getCard() == null && request.getPaymentMethodId() == null
                 && request.getScenario() != null) {
             PaymentMethodEntity method = createSandboxMethod(intent, "CARD", "4242", 12,
                     OffsetDateTime.now().getYear() + 3, scenario, "SANDBOX USER");
-            return new PaymentMaterial(method, type, scenario, null, "SANDBOX USER",
+            return new PaymentMaterial(method, type, scenario, method.getProcessorToken(), null, "SANDBOX USER",
                     method.getCardExpMonth(), method.getCardExpYear(), null);
         }
         if (request.getCard() != null) {
@@ -232,7 +262,7 @@ public class PaymentIntentService {
             String brand = number.startsWith("4") ? "VISA" : number.startsWith("5") ? "MASTERCARD" : "UNKNOWN";
             PaymentMethodEntity method = createSandboxMethod(intent, "CARD", last4, card.getExpMonth(),
                     card.getExpYear(), scenario, card.getHolderName());
-            return new PaymentMaterial(method, "CARD", scenario, number, card.getHolderName(),
+            return new PaymentMaterial(method, "CARD", scenario, method.getProcessorToken(), number, card.getHolderName(),
                     card.getExpMonth(), card.getExpYear(), card.getCvc());
         }
         if (request.getPaymentMethodId() != null) {
@@ -241,9 +271,9 @@ public class PaymentIntentService {
                     .orElseThrow(() -> new IllegalArgumentException("Payment method token not found"));
             try {
                 @SuppressWarnings("unchecked") Map<String, String> stored = objectMapper.readValue(
-                        vaultService.decrypt(method.getEncryptedCardData()), Map.class);
+                        vaultService.decrypt(method.getEncryptedMetadata()), Map.class);
                 scenario = stored.getOrDefault("scenario", "success");
-                return new PaymentMaterial(method, method.getType(), scenario, null, stored.get("holder"),
+                return new PaymentMaterial(method, method.getType(), scenario, method.getProcessorToken(), null, stored.get("holder"),
                         method.getCardExpMonth(), method.getCardExpYear(), null);
             } catch (Exception e) {
                 throw new IllegalStateException("Payment method token could not be opened");
@@ -263,7 +293,8 @@ public class PaymentIntentService {
                 .merchantId(intent.getMerchantId()).customerId(intent.getCustomerId()).type(type)
                 .cardBrand(brand).cardLast4(last4).cardExpMonth(expMonth).cardExpYear(expYear)
                 .vaultToken("pm_" + type.toLowerCase(Locale.ROOT) + "_" + randomToken(24))
-                .encryptedCardData(encrypted).build());
+                .processorToken("sandbox_" + type.toLowerCase(Locale.ROOT) + "_" + randomToken(24))
+                .encryptedMetadata(encrypted).build());
         intent.setPaymentMethodId(method.getId());
         return method;
     }
@@ -290,8 +321,19 @@ public class PaymentIntentService {
     private UUID createCustomerIfPresent(UUID merchantId, CreatePaymentIntentRequest request) {
         if ((request.getCustomerEmail() == null || request.getCustomerEmail().isBlank())
                 && (request.getCustomerName() == null || request.getCustomerName().isBlank())) return null;
+        Map<String, String> pii = new LinkedHashMap<>();
+        if (request.getCustomerEmail() != null && !request.getCustomerEmail().isBlank()) {
+            pii.put("email", request.getCustomerEmail().trim().toLowerCase(Locale.ROOT));
+        }
+        if (request.getCustomerName() != null && !request.getCustomerName().isBlank()) {
+            pii.put("name", request.getCustomerName().trim());
+        }
+        String emailDomain = request.getCustomerEmail() != null && request.getCustomerEmail().contains("@")
+                ? request.getCustomerEmail().substring(request.getCustomerEmail().lastIndexOf('@') + 1)
+                    .trim().toLowerCase(Locale.ROOT)
+                : null;
         return customerRepository.save(CustomerEntity.builder().merchantId(merchantId)
-                .email(request.getCustomerEmail()).fullName(request.getCustomerName()).build()).getId();
+                .emailDomain(emailDomain).encryptedPii(vaultService.encrypt(writeJson(pii))).build()).getId();
     }
 
     private PaymentIntentEntity ownedIntent(UUID merchantId, UUID paymentIntentId) {
@@ -348,6 +390,6 @@ public class PaymentIntentService {
     }
 
     private record PaymentMaterial(PaymentMethodEntity paymentMethod, String type, String scenario,
-                                   String rawCardNumber, String holderName, Integer expMonth,
+                                   String processorToken, String rawCardNumber, String holderName, Integer expMonth,
                                    Integer expYear, String cvc) {}
 }

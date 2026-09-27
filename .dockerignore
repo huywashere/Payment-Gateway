@@ -1,0 +1,15 @@
+.git
+.github
+.vscode
+**/.DS_Store
+**/node_modules
+**/.next
+**/target
+**/coverage
+**/*.log
+.visual-check
+backups
+evidence/production/*
+!evidence/production/README.md
+infra/environments/.env.*
+!infra/environments/*.example

@@ -53,6 +53,7 @@ public class LedgerService {
         // Debit: Clearing (Asset +), Credit: Merchant Pending (Liability +)
         LedgerEntryEntity paymentEntry = LedgerEntryEntity.builder()
                 .chargeId(charge.getId())
+                .entryType("PAYMENT_GROSS")
                 .debitAccountId(clearingAccount.getId())
                 .creditAccountId(merchantAccount.getId())
                 .amount(charge.getAmount())
@@ -66,6 +67,7 @@ public class LedgerService {
         if (charge.getFeeAmount() > 0) {
             LedgerEntryEntity feeEntry = LedgerEntryEntity.builder()
                     .chargeId(charge.getId())
+                    .entryType("PAYMENT_FEE")
                     .debitAccountId(merchantAccount.getId())
                     .creditAccountId(platformRevenueAccount.getId())
                     .amount(charge.getFeeAmount())
@@ -93,6 +95,7 @@ public class LedgerService {
         ledgerEntryRepository.save(LedgerEntryEntity.builder()
                 .chargeId(charge.getId())
                 .refundId(refund.getId())
+                .entryType("REFUND")
                 .debitAccountId(merchantAccount.getId())
                 .creditAccountId(clearingAccount.getId())
                 .amount(refund.getAmount())
@@ -131,6 +134,7 @@ public class LedgerService {
         LedgerAccountEntity available = merchantAccount(settlement.getMerchantId(), "2002_MERCHANT_AVAILABLE_",
                 "Merchant available balance", settlement.getCurrency());
         ledgerEntryRepository.save(LedgerEntryEntity.builder().settlementId(settlement.getId())
+                .entryType("SETTLEMENT")
                 .debitAccountId(pending.getId()).creditAccountId(available.getId())
                 .amount(settlement.getNetAmount()).currency(settlement.getCurrency())
                 .description("Settlement finalized " + settlement.getId()).build());
@@ -148,6 +152,7 @@ public class LedgerService {
         LedgerAccountEntity clearing = systemAccount("1001_SYSTEM_CLEARING",
                 "Cổng thanh toán trung gian Ngân hàng", "ASSET", payout.getCurrency());
         ledgerEntryRepository.save(LedgerEntryEntity.builder().payoutId(payout.getId())
+                .entryType("PAYOUT")
                 .debitAccountId(available.getId()).creditAccountId(clearing.getId())
                 .amount(payout.getAmount()).currency(payout.getCurrency())
                 .description("Merchant payout " + payout.getId()).build());
@@ -165,6 +170,7 @@ public class LedgerService {
                 "Merchant dispute reserve", dispute.getCurrency());
         ledgerEntryRepository.save(LedgerEntryEntity.builder().disputeId(dispute.getId())
                 .chargeId(dispute.getChargeId()).debitAccountId(available.getId()).creditAccountId(reserve.getId())
+                .entryType("DISPUTE_HOLD")
                 .amount(dispute.getAmount()).currency(dispute.getCurrency())
                 .description("Funds reserved for dispute " + dispute.getId()).build());
         return available.getId();
@@ -180,6 +186,7 @@ public class LedgerService {
                 : systemAccount("1001_SYSTEM_CLEARING", "Cổng thanh toán trung gian Ngân hàng", "ASSET", dispute.getCurrency());
         ledgerEntryRepository.save(LedgerEntryEntity.builder().disputeId(dispute.getId())
                 .chargeId(dispute.getChargeId()).debitAccountId(reserve.getId()).creditAccountId(creditAccount.getId())
+                .entryType(merchantWon ? "DISPUTE_RELEASE" : "DISPUTE_LOSS")
                 .amount(dispute.getAmount()).currency(dispute.getCurrency())
                 .description("Dispute resolved " + (merchantWon ? "WON" : "LOST") + " " + dispute.getId()).build());
     }

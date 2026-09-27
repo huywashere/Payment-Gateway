@@ -59,8 +59,8 @@ public class RiskService {
         }
 
         if (intent.getCustomerId() != null) {
-            String email = customerRepository.findById(intent.getCustomerId()).map(CustomerEntity::getEmail).orElse(null);
-            String domain = email != null && email.contains("@") ? email.substring(email.lastIndexOf('@') + 1).toLowerCase(Locale.ROOT) : null;
+            String domain = customerRepository.findById(intent.getCustomerId())
+                    .map(CustomerEntity::getEmailDomain).orElse(null);
             if (domain != null && domains(profile.getBlockedEmailDomains()).contains(domain)) {
                 score += 100;
                 reasons.add("blocked_email_domain");

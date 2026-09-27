@@ -11,7 +11,7 @@
 Hệ thống được thiết kế theo các tiêu chuẩn kiến trúc phần mềm tài chính quốc tế, đảm bảo 5 trụ cột:
 1. **Tính nhất quán tuyệt đối (Strict Consistency):** Tiền không bao giờ tự sinh ra hoặc mất đi. Số dư không lưu dưới dạng mutable value mà được tính toán dựa trên **Double-Entry Bookkeeping (Sổ cái kế toán kép)**.
 2. **Nguyên tắc Idempotency (Chống trừ tiền trùng lặp):** Bất kỳ request nào từ Merchant hoặc phía khách hàng có thể bị gửi lại nhiều lần do mạng lag/retry đều phải đảm bảo chỉ thực thi duy nhất 1 lần.
-3. **Bảo mật & Cô lập phạm vi PCI-DSS (Zero-Trust Tokenization):** Hệ thống chính không lưu trữ số thẻ thô (PAN) và CVV dạng plain-text. Tách biệt tầng **Card Vault** mã hóa bằng chuẩn AES-256-GCM.
+3. **Bảo mật & Giảm phạm vi PCI-DSS (Zero-Trust Tokenization):** Database không có cột PAN/CVC. Sandbox chỉ mã hóa metadata không nhạy cảm bằng AES-256-GCM; live bắt buộc dùng opaque token từ hosted fields/acquirer và adapter KMS/HSM.
 4. **Phân tách Ranh giới Rõ ràng (Domain-Driven Design - DDD):** Áp dụng kiến trúc Clean Architecture / Hexagonal Architecture để Domain Logic độc lập hoàn toàn với Framework, Database và UI.
 5. **Giao tiếp Bất đồng bộ Tin cậy (Reliable Asynchronous Messaging):** Sử dụng **Transactional Outbox Pattern** kết hợp RabbitMQ để đảm bảo Webhook và Event kế toán không bao giờ bị mất (At-least-once Delivery).
 
@@ -272,7 +272,7 @@ CREATE TABLE customers (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. BẢNG THẺ ĐÃ TOKENIZE (PCI-DSS CARD VAULT)
+-- 4. BẢNG PAYMENT METHOD TOKEN (KHÔNG LƯU PAN/CVC)
 CREATE TABLE payment_methods (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID REFERENCES customers(id),
@@ -282,8 +282,9 @@ CREATE TABLE payment_methods (
     card_last4 VARCHAR(4),
     card_exp_month INT,
     card_exp_year INT,
-    vault_token VARCHAR(255) UNIQUE NOT NULL, -- Token trả về cho client (pm_card_...)
-    encrypted_card_data TEXT NOT NULL, -- Mã hóa AES-256-GCM chứa PAN, Holder Name
+    vault_token VARCHAR(255) UNIQUE NOT NULL, -- Token nội bộ trả về cho client
+    processor_token VARCHAR(255) NOT NULL, -- Opaque token do sandbox/acquirer phát hành
+    encrypted_metadata TEXT NOT NULL, -- Chỉ metadata không nhạy cảm; cấm PAN/CVC/PIN/track
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

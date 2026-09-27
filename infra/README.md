@@ -70,10 +70,20 @@ docker compose `
 
 ## Production configuration
 
-Use the Spring profile `production`. Every database, broker, cache, vault, origin, and portal secret in that profile is required and has no development fallback. The `.env.production.example` file is a schema only; real values belong in a managed secret store and must never be committed.
+Use the Spring profile `production`. Every database, broker, cache, origin, OIDC and portal secret in that profile is required and has no development fallback. The `.env.production.example` file is a schema only; real values belong in a managed secret store and must never be committed.
 
-`GATEWAY_PLATFORM_ADMIN_KEY` protects merchant onboarding and must be generated and stored separately from merchant API keys. Keep `GATEWAY_WEBHOOK_ALLOW_PRIVATE_ENDPOINTS=false` in production. Webhook delivery is enabled explicitly with `GATEWAY_WEBHOOK_DELIVERY_ENABLED=true`; route outbound traffic through controlled egress before accepting arbitrary merchant endpoints.
+Production platform administration uses an OIDC JWT carrying `PLATFORM_ADMIN` or `PAYMENTS_PLATFORM_ADMIN`; `GATEWAY_PLATFORM_ADMIN_KEY` is sandbox/staging-only. Keep `GATEWAY_WEBHOOK_ALLOW_PRIVATE_ENDPOINTS=false` in production. Webhook delivery is enabled explicitly with `GATEWAY_WEBHOOK_DELIVERY_ENABLED=true`; route outbound traffic through controlled egress before accepting arbitrary merchant endpoints.
+
+The production defaults deliberately select fail-closed live charge, payout and KMS placeholders. A deployment cannot be considered ready until contracted processor adapters and a real KMS/HSM-backed `PaymentMetadataVault` replace them.
 
 Production enables Redis-backed request limits and fails closed by default. Tune the three per-minute limits from observed traffic, not by disabling the filter. `GATEWAY_WEBHOOK_REQUIRE_HTTPS=true` must remain enabled. The platform operations API should be reachable only from the operator network even though it also requires the administrator key.
 
 The backend production management server listens on port `9090` and exposes only health, info, and Prometheus endpoints. Keep that port on a private monitoring network; never publish it directly to the internet.
+
+## Local staging simulation
+
+Use `infra/compose/compose.staging.yml` with `.env.staging.example` to exercise two backend instances behind Nginx, portal authentication, the bank sandbox processor and recovery scripts. This stack demonstrates stateless scaling but its single local PostgreSQL, Redis and RabbitMQ containers are not production HA. See `docs/staging-and-ha.md`.
+
+Backups now include a SHA-256 sidecar which restore verifies before touching the database. After a restore, run `scripts/verify-ledger-invariants.ps1`; use `scripts/chaos-staging.ps1 -ConfirmChaos` to verify that either backend replica can be stopped without losing readiness.
+
+`infra/k8s/base` provides the provider-neutral production baseline for the stateless services. It expects managed/external HA data services and a secret named `payment-gateway-runtime`; see `infra/k8s/README.md` before rendering it.

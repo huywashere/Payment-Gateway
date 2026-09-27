@@ -43,6 +43,13 @@ jobs:
           -f infra/compose/compose.observability.yml
           config --quiet
 
+      - name: Validate staging stack
+        run: >-
+          docker compose
+          --env-file infra/environments/.env.staging.example
+          -f infra/compose/compose.staging.yml
+          config --quiet
+
   backend:
     name: Backend tests
     runs-on: ubuntu-latest

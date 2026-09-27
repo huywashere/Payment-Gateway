@@ -64,6 +64,22 @@ body {
 .site-shell { min-height: 100vh; background: var(--bg-adyen-navy); }
 .site-shell > main { min-height: 100vh; padding-top: 72px; }
 
+.portal-session-badge { position: fixed; z-index: 110; right: 160px; top: 17px; min-height: 38px; display: flex; align-items: center; gap: 9px; padding: 6px 8px 6px 12px; border: 1px solid rgba(0,212,116,.32); border-radius: 8px; color: #fff; background: rgba(0,17,44,.9); box-shadow: 0 8px 28px rgba(0,0,0,.2); backdrop-filter: blur(14px); }
+.portal-session-badge span { display: flex; min-width: 84px; flex-direction: column; font: 700 .64rem var(--font-mono); line-height: 1.2; }
+.portal-session-badge small { color: #00d474; text-transform: uppercase; }
+.portal-session-badge button { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 6px; color: #fff; background: rgba(255,255,255,.08); }
+.portal-login-shell { min-height: calc(100vh - 72px); display: grid; place-items: center; padding: 48px 20px; background: radial-gradient(circle at 50% 20%, rgba(0,212,116,.12), transparent 38%), #00112c; }
+.portal-login-card { width: min(100%,440px); display: grid; gap: 15px; padding: 34px; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(4,19,40,.94); box-shadow: 0 32px 90px rgba(0,0,0,.35); }
+.portal-login-icon { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 14px; color: #00112c; background: #00d474; }
+.portal-kicker { color: #00d474; font: 700 .7rem var(--font-mono); letter-spacing: .08em; }
+.portal-login-card h1 { font: 700 2rem var(--font-sans); }
+.portal-login-copy,.portal-login-card small { color: var(--text-secondary); }
+.portal-login-card label { display: grid; gap: 7px; color: #dbe5f4; font-size: .82rem; font-weight: 700; }
+.portal-login-card input { width: 100%; padding: 12px 13px; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; color: #fff; background: #061b3d; outline: none; }
+.portal-login-card input:focus { border-color: #00d474; box-shadow: 0 0 0 3px rgba(0,212,116,.12); }
+.portal-login-card button { display: flex; justify-content: center; gap: 8px; margin-top: 5px; }
+.portal-login-error { padding: 9px 11px; border-radius: 7px; color: #fecaca; background: rgba(239,68,68,.14); font-size: .82rem; }
+
 .adyen-site-header {
   position: fixed;
   z-index: 100;
@@ -154,6 +170,7 @@ body {
 .adyen-footer-social > span { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 18px; border-radius: 7px; background: #1b2c40; }
 
 @media (max-width: 900px) {
+  .portal-session-badge { right: 16px; top: 76px; }
   .site-shell > main { padding-top: 80px; }
   .adyen-site-header { top: 12px; height: 56px; padding: 0 16px; pointer-events: none; }
   .adyen-site-header > * { min-width: 0; }

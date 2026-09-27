@@ -7,9 +7,11 @@ import com.gateway.infrastructure.adapter.persistence.entity.RefundEntity;
 import com.gateway.infrastructure.adapter.persistence.repository.ChargeRepository;
 import com.gateway.infrastructure.adapter.persistence.repository.RefundRepository;
 import com.gateway.infrastructure.adapter.redis.IdempotencyManager;
+import com.gateway.infrastructure.adapter.processor.BankProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import java.util.Map;
 import java.util.UUID;
@@ -23,6 +25,8 @@ public class RefundService {
     private final OutboxService outboxService;
     private final IdempotencyManager idempotencyManager;
     private final AuditService auditService;
+    private final BankProcessor bankProcessor;
+    private final MeterRegistry meterRegistry;
 
     @Transactional
     public RefundResponse create(UUID merchantId, UUID chargeId, String idempotencyKey, CreateRefundRequest request) {
@@ -50,8 +54,28 @@ public class RefundService {
         }
         RefundEntity refund = refundRepository.save(RefundEntity.builder()
                 .chargeId(chargeId).merchantId(merchantId).amount(amount).currency(charge.getCurrency())
-                .status("SUCCEEDED").reason(request.getReason()).idempotencyKey(idempotencyKey)
-                .processorRefundId("re_mock_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20)).build());
+                .status("PROCESSING").reason(request.getReason()).idempotencyKey(idempotencyKey).build());
+        BankProcessor.BankReversalResponse reversal = bankProcessor.reversePayment(
+                BankProcessor.BankReversalRequest.builder()
+                        .operationId(merchantId + ":refund:" + idempotencyKey)
+                        .processorTransactionId(charge.getProcessorTxId()).amount(amount)
+                        .currency(charge.getCurrency()).reason(request.getReason()).build());
+        if (!reversal.isSuccess()) {
+            meterRegistry.counter("gateway_refund_outcomes_total", "outcome", "failed").increment();
+            refund.setStatus("FAILED");
+            refund.setFailureMessage(reversal.getErrorMessage());
+            refundRepository.save(refund);
+            outboxService.enqueue(merchantId, "REFUND", refund.getId(), "refund.failed", Map.of(
+                    "id", refund.getId().toString(), "charge", chargeId.toString(), "amount", amount,
+                    "currency", charge.getCurrency(), "failure_code", reversal.getErrorCode()));
+            auditService.record(merchantId, "API_KEY", merchantId.toString(), "refund.failed",
+                    "refund", refund.getId().toString(), Map.of("failure_code", reversal.getErrorCode()));
+            return response(refund);
+        }
+        refund.setStatus("SUCCEEDED");
+        meterRegistry.counter("gateway_refund_outcomes_total", "outcome", "succeeded").increment();
+        refund.setProcessorRefundId(reversal.getReversalId());
+        refundRepository.save(refund);
         ledgerService.recordRefundSucceeded(charge, refund);
         charge.setStatus(amount == refundable ? "REFUNDED" : "PARTIALLY_REFUNDED");
         chargeRepository.save(charge);

@@ -5,10 +5,12 @@ import com.gateway.application.dto.PayoutResponse;
 import com.gateway.infrastructure.adapter.persistence.entity.PayoutEntity;
 import com.gateway.infrastructure.adapter.persistence.repository.PayoutRepository;
 import com.gateway.infrastructure.adapter.redis.IdempotencyManager;
+import com.gateway.infrastructure.adapter.processor.PayoutProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -21,6 +23,8 @@ public class PayoutService {
     private final OutboxService outboxService;
     private final AuditService auditService;
     private final IdempotencyManager idempotencyManager;
+    private final PayoutProcessor payoutProcessor;
+    private final MeterRegistry meterRegistry;
 
     @Transactional
     public PayoutResponse create(UUID merchantId, String idempotencyKey, CreatePayoutRequest request) {
@@ -41,9 +45,30 @@ public class PayoutService {
         if (destination.length() > 100) throw new IllegalArgumentException("Destination reference is too long");
         PayoutEntity payout = repository.save(PayoutEntity.builder().merchantId(merchantId)
                 .amount(request.getAmount()).currency(request.getCurrency().toUpperCase(Locale.ROOT))
-                .status("PAID").destinationReference(mask(destination)).description(request.getDescription())
-                .processorPayoutId("po_mock_" + UUID.randomUUID().toString().replace("-", "").substring(0, 20))
-                .idempotencyKey(idempotencyKey).paidAt(OffsetDateTime.now()).build());
+                .status("PROCESSING").destinationReference(mask(destination)).description(request.getDescription())
+                .idempotencyKey(idempotencyKey).build());
+        PayoutProcessor.PayoutProcessResponse result = payoutProcessor.createPayout(
+                PayoutProcessor.PayoutProcessRequest.builder()
+                        .operationId(merchantId + ":payout:" + idempotencyKey)
+                        .amount(payout.getAmount()).currency(payout.getCurrency())
+                        .destinationReference(destination).description(payout.getDescription()).build());
+        if (!result.isSuccess()) {
+            meterRegistry.counter("gateway_payout_outcomes_total", "outcome", "failed").increment();
+            payout.setStatus("FAILED");
+            payout.setFailureMessage(result.getErrorMessage());
+            repository.save(payout);
+            outboxService.enqueue(merchantId, "PAYOUT", payout.getId(), "payout.failed", Map.of(
+                    "id", payout.getId().toString(), "amount", payout.getAmount(), "currency", payout.getCurrency(),
+                    "status", payout.getStatus(), "failure_code", result.getErrorCode()));
+            auditService.record(merchantId, "API_KEY", merchantId.toString(), "payout.failed",
+                    "payout", payout.getId().toString(), Map.of("failure_code", result.getErrorCode()));
+            return response(payout);
+        }
+        payout.setStatus("PAID");
+        meterRegistry.counter("gateway_payout_outcomes_total", "outcome", "paid").increment();
+        payout.setProcessorPayoutId(result.getProcessorPayoutId());
+        payout.setPaidAt(OffsetDateTime.now());
+        repository.save(payout);
         ledgerService.recordPayout(payout);
         outboxService.enqueue(merchantId, "PAYOUT", payout.getId(), "payout.paid", Map.of(
                 "id", payout.getId().toString(), "amount", payout.getAmount(), "currency", payout.getCurrency(),

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.gateway.domain.exception.IdempotencyConflictException;
+import com.gateway.infrastructure.adapter.persistence.entity.IdempotencyRecordEntity;
+import com.gateway.infrastructure.adapter.persistence.repository.IdempotencyRecordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
@@ -12,6 +14,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +32,7 @@ public class IdempotencyManager {
 
     private final RedissonClient redissonClient;
     private final ObjectMapper objectMapper;
+    private final IdempotencyRecordRepository recordRepository;
 
     @Value("${gateway.idempotency.ttl-seconds:86400}")
     private long idempotencyTtlSeconds;
@@ -41,10 +45,12 @@ public class IdempotencyManager {
      * If the key is already resolved, returns the cached result.
      * If another thread/node is currently resolving it, throws 409 Conflict.
      */
+    @Transactional
     public <T> T execute(UUID merchantId, String idempotencyKey, Class<T> responseType, Supplier<T> operation) {
         return execute(merchantId, idempotencyKey, null, responseType, operation);
     }
 
+    @Transactional
     public <T> T execute(UUID merchantId, String idempotencyKey, String requestHash,
                          Class<T> responseType, Supplier<T> operation) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
@@ -65,6 +71,13 @@ public class IdempotencyManager {
             return deserializeCached(cachedValue, requestHash, responseType);
         }
 
+        IdempotencyRecordEntity durable = recordRepository
+                .findByMerchantIdAndIdempotencyKey(merchantId, idempotencyKey).orElse(null);
+        if (durable != null && "COMPLETED".equals(durable.getStatus())) {
+            validateRequestHash(durable.getRequestHash(), requestHash);
+            return deserializeResponse(durable.getResponsePayload(), responseType);
+        }
+
         // 2. Acquire Distributed Lock with 0 wait time to immediately reject concurrent double-clicks
         RLock lock = redissonClient.getLock(lockKey);
         boolean acquired = false;
@@ -83,8 +96,32 @@ public class IdempotencyManager {
                 return deserializeCached(cachedValue, requestHash, responseType);
             }
 
+            durable = recordRepository.findByMerchantIdAndIdempotencyKey(merchantId, idempotencyKey).orElse(null);
+            if (durable != null && "COMPLETED".equals(durable.getStatus())) {
+                validateRequestHash(durable.getRequestHash(), requestHash);
+                return deserializeResponse(durable.getResponsePayload(), responseType);
+            }
+            if (durable == null) {
+                durable = recordRepository.save(IdempotencyRecordEntity.builder()
+                        .merchantId(merchantId).idempotencyKey(idempotencyKey).requestHash(requestHash)
+                        .responseType(responseType.getName()).status("IN_PROGRESS").build());
+            } else {
+                validateRequestHash(durable.getRequestHash(), requestHash);
+            }
+
             // 3. Execute business logic
             T result = operation.get();
+
+            String responsePayload;
+            try {
+                responsePayload = objectMapper.writeValueAsString(result);
+            } catch (JsonProcessingException exception) {
+                throw new IllegalStateException("Failed to serialize durable idempotency response", exception);
+            }
+            durable.setResponsePayload(responsePayload);
+            durable.setResponseType(responseType.getName());
+            durable.setStatus("COMPLETED");
+            recordRepository.save(durable);
 
             // 4. Save result to cache with TTL (24 hours)
             try {
@@ -124,12 +161,7 @@ public class IdempotencyManager {
             JsonNode node = objectMapper.readTree(cachedValue);
             if (node.has("response")) {
                 String storedHash = node.path("requestHash").asText(null);
-                if (requestHash != null && storedHash != null && !MessageDigest.isEqual(
-                        requestHash.getBytes(StandardCharsets.UTF_8), storedHash.getBytes(StandardCharsets.UTF_8))) {
-                    throw new IdempotencyConflictException(
-                            "The same Idempotency-Key was already used with different request parameters."
-                    );
-                }
+                validateRequestHash(storedHash, requestHash);
                 return objectMapper.treeToValue(node.get("response"), responseType);
             }
             // Backwards compatibility with cache records produced before the envelope existed.
@@ -138,6 +170,22 @@ public class IdempotencyManager {
             throw e;
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to deserialize cached idempotency response", e);
+        }
+    }
+
+    private void validateRequestHash(String storedHash, String requestHash) {
+        if (requestHash != null && storedHash != null && !MessageDigest.isEqual(
+                requestHash.getBytes(StandardCharsets.UTF_8), storedHash.getBytes(StandardCharsets.UTF_8))) {
+            throw new IdempotencyConflictException(
+                    "The same Idempotency-Key was already used with different request parameters.");
+        }
+    }
+
+    private <T> T deserializeResponse(String payload, Class<T> responseType) {
+        try {
+            return objectMapper.readValue(payload, responseType);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Failed to deserialize durable idempotency response", exception);
         }
     }
 }

@@ -18,9 +18,13 @@ out/
 infra/environments/.env.dev
 infra/environments/.env.test
 infra/environments/.env.production
+infra/environments/.env.staging
 infra/environments/.env.observability
 .env*.local
 *.pem
+infra/k8s/**/secret*.yaml
+evidence/production/*
+!evidence/production/README.md
 
 # IDEs & OS
 .idea/
@@ -37,6 +41,7 @@ Thumbs.db
 
 # Logs
 *.log
+backups/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

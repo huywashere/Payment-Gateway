@@ -37,8 +37,21 @@ spring:
 
 # Gateway Custom Configurations
 gateway:
+  mode: ${GATEWAY_MODE:sandbox}
+  processor:
+    mode: ${GATEWAY_PROCESSOR_MODE:mock}
+    live-adapter: ${GATEWAY_LIVE_PROCESSOR_ADAPTER:placeholder}
+    live-payout-adapter: ${GATEWAY_LIVE_PAYOUT_ADAPTER:placeholder}
+    sandbox-client-id: ${BANK_SANDBOX_CLIENT_ID:project-client}
+    sandbox-client-secret: ${BANK_SANDBOX_CLIENT_SECRET:project-secret}
+    sandbox-callback-secret: ${BANK_SANDBOX_CALLBACK_SECRET:project-callback-secret}
   security:
     platform-admin-key: ${GATEWAY_PLATFORM_ADMIN_KEY:}
+    platform-auth-mode: ${GATEWAY_PLATFORM_AUTH_MODE:key}
+    vault-provider: ${GATEWAY_VAULT_PROVIDER:environment}
+    kms-adapter: ${GATEWAY_KMS_ADAPTER:placeholder}
+  production:
+    external-controls-attested: ${GATEWAY_EXTERNAL_CONTROLS_ATTESTED:false}
   fee:
     fixed-fee-vnd: ${GATEWAY_FIXED_FEE_VND:2000}
     percentage-fee: ${GATEWAY_PERCENTAGE_FEE:0.015}
@@ -51,6 +64,7 @@ gateway:
     max-attempts: ${GATEWAY_WEBHOOK_MAX_ATTEMPTS:5}
     poll-interval-ms: ${GATEWAY_WEBHOOK_POLL_INTERVAL_MS:2000}
     require-https: ${GATEWAY_WEBHOOK_REQUIRE_HTTPS:false}
+    store-response-body: ${GATEWAY_WEBHOOK_STORE_RESPONSE_BODY:false}
   rate-limit:
     enabled: ${GATEWAY_RATE_LIMIT_ENABLED:false}
     requests-per-minute: ${GATEWAY_RATE_LIMIT_REQUESTS_PER_MINUTE:300}

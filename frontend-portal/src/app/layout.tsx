@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AdyenFooter, AdyenHeader } from '@/components/AdyenChrome';
+import { PortalSessionBadge } from '@/components/PortalSessionBadge';
 
 export const metadata: Metadata = {
   title: 'ApiPay | Unified Payments & Financial Technology Platform',
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <div className="site-shell">
           <AdyenHeader />
+          <PortalSessionBadge />
           <main>{children}</main>
           <AdyenFooter />
         </div>

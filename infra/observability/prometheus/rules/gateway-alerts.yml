@@ -86,3 +86,26 @@ groups:
         annotations:
           summary: Backend JVM heap usage is above 85 percent
           description: JVM heap usage has remained above 85 percent for ten minutes.
+
+      - alert: PaymentGatewayPayoutFailure
+        expr: increase(gateway_payout_outcomes_total{outcome="failed"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: payout
+        annotations:
+          summary: A payout processor operation failed
+          description: At least one payout failed during the last five minutes and requires operations review.
+
+      - alert: PaymentGatewayProcessorFailureRate
+        expr: |
+          sum(rate(gateway_payment_outcomes_total{outcome="processor_failed"}[10m]))
+          /
+          clamp_min(sum(rate(gateway_payment_outcomes_total[10m])), 0.001) > 0.03
+        for: 5m
+        labels:
+          severity: warning
+          service: payments
+        annotations:
+          summary: Payment processor failure rate is above three percent
+          description: Processor failures have exceeded the configured operating threshold.

@@ -18,9 +18,10 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
    - Sử dụng **Redis 7 & Redisson Distributed Lock** dựa trên header `Idempotency-Key`.
    - Replay cache 24h trả về kết quả ngay lập tức khi nhận request trùng lặp, chống trừ tiền 2 lần (Double-charge).
 
-4. **Bảo Mật Dữ Liệu Thẻ (PCI-DSS Tokenization Vault):**
-   - Mã hóa phong bì (Envelope Encryption) bằng thuật toán **AES-256-GCM** với Auth Tag 128-bit.
-   - Cô lập thông tin thẻ nhạy cảm, chỉ lưu `token` và `last4` hiển thị.
+4. **Giảm Phạm Vi Dữ Liệu Thẻ:**
+   - Không có cột lưu PAN/CVC; production chỉ nhận opaque token từ hosted fields/acquirer.
+   - Sandbox mã hóa metadata không nhạy cảm bằng **AES-256-GCM**; live bắt buộc thay adapter KMS/HSM.
+   - Chỉ lưu token processor, brand, hạn thẻ và `last4` phục vụ hiển thị.
 
 5. **Xử Lý Sự Kiện Bất Đồng Bộ (Transactional Outbox & RabbitMQ):**
    - Bảng `outbox_events` được lưu trong cùng Database Transaction ACID với đơn thanh toán để giải quyết triệt để **Dual-Write Problem**.
@@ -41,13 +42,25 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
    - Reconciliation cấp transaction, operational readiness, Redis rate limit và worker multi-instance `SKIP LOCKED`.
    - Ledger/audit append-only ở tầng PostgreSQL và webhook HTTPS/SSRF policy được kiểm tra lại khi delivery.
 
+9. **Project Production Simulation:**
+   - Tách sandbox/live, sandbox có MFA giả lập; live dùng OIDC + MFA claim và RBAC bốn vai trò.
+   - Bank sandbox processor mô phỏng OAuth, callback ký HMAC và reversal idempotent.
+   - Staging hai backend, backup/restore drill, load/concurrency test và bộ tài liệu PCI/KYB/pilot.
+
+10. **Production Safety Boundary:**
+   - Live portal dùng OIDC + PKCE + MFA claim; platform admin dùng JWT role thay cho demo key.
+   - Không có cột PAN/CVC, live từ chối raw card, PII khách hàng được mã hóa/xóa độc lập với lịch sử tài chính.
+   - Durable idempotency, processor callback inbox, deterministic operation ID và database ledger constraints.
+   - Live charge/payout/KMS placeholders cố ý chặn khởi động cho tới khi adapter thật được cung cấp.
+   - Kubernetes HA baseline và production evidence gate không cho checklist giả được xem là phê duyệt thật.
+
 ---
 
 ## 🛠 Tech Stack
 
 | Thành Phần | Công Nghệ & Phiên Bản |
 | :--- | :--- |
-| **Backend Core** | Java 21 + Spring Boot 3.3.4 (Virtual Threads / Project Loom) |
+| **Backend Core** | Java 21 + Spring Boot 3.5.16 (Virtual Threads / Project Loom) |
 | **Frontend Portal** | Next.js 16 (App Router) + TypeScript + Vanilla CSS + Prisma ORM 6 |
 | **Database** | PostgreSQL 16 (Flyway Database Migration, JSONB, UUID v4) |
 | **Distributed Cache & Lock** | Redis 7 + Redisson 3.34 |
@@ -130,7 +143,7 @@ Backend chỉ cho phép CORS từ portal đã khai báo (phân tách nhiều ori
 GATEWAY_ALLOWED_ORIGINS=http://localhost:3000
 ```
 
-Spring Boot mặc định dùng profile `local`. Container development dùng profile `docker`; production phải dùng profile `production`. Profile production không có fallback cho database, Redis, RabbitMQ, vault key hoặc allowed origins và sẽ từ chối khởi động nếu thiếu cấu hình bắt buộc. Không sử dụng file `.env.production.example` để lưu secret thật; secret production phải đến từ secret manager của môi trường triển khai.
+Spring Boot mặc định dùng profile `local`. Container development dùng profile `docker`; production phải dùng profile `production`. Profile production không có fallback cho database, Redis, RabbitMQ, OIDC hoặc allowed origins; nó còn từ chối khởi động nếu charge, payout hay KMS vẫn là adapter placeholder. Không sử dụng file `.env.production.example` để lưu secret thật; secret production phải đến từ secret manager của môi trường triển khai.
 
 ---
 
@@ -141,6 +154,8 @@ Mỗi pull request chạy Maven test với dependencies thật, frontend lint/bu
 Runbook xử lý sự cố và ý nghĩa cảnh báo nằm trong [`docs/operations-runbook.md`](docs/operations-runbook.md).
 Phạm vi và cách kiểm thử giai đoạn 6-8 nằm trong [`docs/stages-6-8.md`](docs/stages-6-8.md).
 Money operations và hardening giai đoạn 9-10 nằm trong [`docs/stages-9-10.md`](docs/stages-9-10.md).
+Phạm vi production simulation giai đoạn 11-15 nằm trong [`docs/stages-11-15.md`](docs/stages-11-15.md).
+Ranh giới hardening và các blocker bên ngoài nằm trong [`docs/production-hardening.md`](docs/production-hardening.md).
 
 ---
 

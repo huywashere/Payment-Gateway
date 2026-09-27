@@ -5,10 +5,11 @@ import com.gateway.application.dto.CreateSandboxPaymentMethodRequest;
 import com.gateway.application.dto.PaymentMethodResponse;
 import com.gateway.infrastructure.adapter.persistence.entity.PaymentMethodEntity;
 import com.gateway.infrastructure.adapter.persistence.repository.PaymentMethodRepository;
-import com.gateway.infrastructure.adapter.security.AesGcmVaultService;
+import com.gateway.infrastructure.adapter.security.PaymentMetadataVault;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -18,11 +19,12 @@ import java.util.*;
 @RestController
 @RequestMapping("/v1/payment_methods")
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "gateway.mode", havingValue = "sandbox", matchIfMissing = true)
 public class SandboxPaymentMethodController {
     private static final Set<String> TYPES = Set.of("CARD", "VIETQR");
     private static final Set<String> SCENARIOS = Set.of("success", "declined", "insufficient_funds", "requires_action", "timeout");
     private final PaymentMethodRepository repository;
-    private final AesGcmVaultService vaultService;
+    private final PaymentMetadataVault vaultService;
     private final ObjectMapper objectMapper;
 
     @PostMapping
@@ -42,7 +44,8 @@ public class SandboxPaymentMethodController {
         PaymentMethodEntity entity = repository.save(PaymentMethodEntity.builder()
                 .merchantId((UUID) authentication.getPrincipal()).type(type).cardBrand(type)
                 .cardLast4("CARD".equals(type) ? "4242" : "N/A")
-                .vaultToken(token).encryptedCardData(vaultService.encrypt(payload)).build());
+                .vaultToken(token).processorToken("sandbox_" + token)
+                .encryptedMetadata(vaultService.encrypt(payload)).build());
         return ResponseEntity.status(HttpStatus.CREATED).body(PaymentMethodResponse.builder()
                 .id(entity.getVaultToken()).object("payment_method").type(type)
                 .scenario(scenario).sandbox(true).createdAt(entity.getCreatedAt()).build());

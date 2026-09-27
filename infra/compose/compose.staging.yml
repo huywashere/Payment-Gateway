@@ -1,0 +1,137 @@
+name: payment-gateway-staging
+
+x-backend: &backend
+  build:
+    context: ../..
+    dockerfile: infra/docker/backend.Dockerfile
+  image: payment-gateway/backend-core:staging
+  environment: &backend-env
+    SPRING_PROFILES_ACTIVE: docker
+    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+    SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+    SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    SPRING_REDIS_HOST: redis
+    SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD}
+    SPRING_RABBITMQ_HOST: rabbitmq
+    SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER}
+    SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    SPRING_RABBITMQ_VIRTUAL_HOST: ${RABBITMQ_VHOST}
+    GATEWAY_MODE: ${GATEWAY_MODE}
+    GATEWAY_PROCESSOR_MODE: ${GATEWAY_PROCESSOR_MODE}
+    GATEWAY_VAULT_KEY: ${GATEWAY_VAULT_KEY}
+    GATEWAY_VAULT_PROVIDER: ${GATEWAY_VAULT_PROVIDER:-environment}
+    GATEWAY_ALLOWED_ORIGINS: ${GATEWAY_ALLOWED_ORIGINS}
+    GATEWAY_PLATFORM_ADMIN_KEY: ${GATEWAY_PLATFORM_ADMIN_KEY}
+    GATEWAY_WEBHOOK_DELIVERY_ENABLED: ${GATEWAY_WEBHOOK_DELIVERY_ENABLED}
+    GATEWAY_WEBHOOK_ALLOW_PRIVATE_ENDPOINTS: ${GATEWAY_WEBHOOK_ALLOW_PRIVATE_ENDPOINTS}
+    GATEWAY_WEBHOOK_REQUIRE_HTTPS: ${GATEWAY_WEBHOOK_REQUIRE_HTTPS}
+    GATEWAY_RATE_LIMIT_ENABLED: ${GATEWAY_RATE_LIMIT_ENABLED}
+    GATEWAY_RATE_LIMIT_FAIL_OPEN: ${GATEWAY_RATE_LIMIT_FAIL_OPEN}
+    BANK_SANDBOX_CLIENT_ID: ${BANK_SANDBOX_CLIENT_ID}
+    BANK_SANDBOX_CLIENT_SECRET: ${BANK_SANDBOX_CLIENT_SECRET}
+    BANK_SANDBOX_CALLBACK_SECRET: ${BANK_SANDBOX_CALLBACK_SECRET}
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+    rabbitmq: { condition: service_healthy }
+  healthcheck:
+    test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9090/actuator/health || exit 1"]
+    interval: 10s
+    timeout: 5s
+    retries: 15
+    start_period: 30s
+  restart: unless-stopped
+  networks: [app, data]
+
+services:
+  postgres:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [postgres-staging:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+    networks: [data]
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes: [redis-staging:/data]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+    networks: [data]
+
+  rabbitmq:
+    image: rabbitmq:3.13-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+    volumes: [rabbitmq-staging:/var/lib/rabbitmq]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+    restart: unless-stopped
+    networks: [data]
+
+  backend-a:
+    <<: *backend
+
+  backend-b:
+    <<: *backend
+
+  gateway-lb:
+    image: nginx:1.27-alpine
+    volumes:
+      - ../nginx/staging.conf:/etc/nginx/nginx.conf:ro
+    ports: ["127.0.0.1:8088:8080"]
+    depends_on:
+      backend-a: { condition: service_healthy }
+      backend-b: { condition: service_healthy }
+    restart: unless-stopped
+    networks: [edge, app]
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: infra/docker/frontend.Dockerfile
+    image: payment-gateway/frontend-portal:staging
+    environment:
+      GATEWAY_CORE_URL: http://gateway-lb:8080
+      GATEWAY_MODE: ${GATEWAY_MODE}
+      GATEWAY_SANDBOX_SECRET_KEY: ${GATEWAY_SANDBOX_SECRET_KEY}
+      PORTAL_SESSION_SECRET: ${PORTAL_SESSION_SECRET}
+      PORTAL_AUTH_MODE: ${PORTAL_AUTH_MODE:-demo}
+      PORTAL_DEMO_PASSWORD: ${PORTAL_DEMO_PASSWORD}
+      PORTAL_DEMO_MFA_CODE: ${PORTAL_DEMO_MFA_CODE}
+      PORTAL_SECURE_COOKIES: ${PORTAL_SECURE_COOKIES}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    ports: ["127.0.0.1:3008:3000"]
+    depends_on:
+      gateway-lb: { condition: service_started }
+    restart: unless-stopped
+    networks: [edge, app, data]
+
+networks:
+  edge:
+  app:
+  data:
+
+volumes:
+  postgres-staging:
+  redis-staging:
+  rabbitmq-staging:

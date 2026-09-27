@@ -60,9 +60,9 @@ model ApiKey {
 model Customer {
   id         String   @id @default(uuid()) @db.Uuid
   merchantId String   @map("merchant_id") @db.Uuid
-  email      String?  @db.VarChar(255)
-  fullName   String?  @map("full_name") @db.VarChar(255)
-  phone      String?  @db.VarChar(50)
+  encryptedPii String? @map("encrypted_pii")
+  emailDomain String?  @map("email_domain") @db.VarChar(255)
+  piiErasedAt DateTime? @map("pii_erased_at") @db.Timestamptz(6)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   merchant       Merchant        @relation(fields: [merchantId], references: [id], onDelete: Cascade)
@@ -78,7 +78,8 @@ model PaymentMethod {
   merchantId        String   @map("merchant_id") @db.Uuid
   type              String   @db.VarChar(50)
   vaultToken        String   @unique @map("vault_token") @db.VarChar(255)
-  encryptedCardData String   @map("encrypted_card_data")
+  processorToken    String   @map("processor_token") @db.VarChar(255)
+  encryptedMetadata String   @map("encrypted_metadata")
   cardLast4         String?  @map("card_last4") @db.VarChar(4)
   cardBrand         String?  @map("card_brand") @db.VarChar(50)
   cardExpMonth      Int?     @map("card_exp_month")
@@ -172,6 +173,7 @@ model LedgerEntry {
   settlementId    String?  @map("settlement_id") @db.Uuid
   payoutId        String?  @map("payout_id") @db.Uuid
   disputeId       String?  @map("dispute_id") @db.Uuid
+  entryType       String   @map("entry_type") @db.VarChar(50)
   debitAccountId  String   @map("debit_account_id") @db.Uuid
   creditAccountId String   @map("credit_account_id") @db.Uuid
   amount          BigInt
@@ -442,4 +444,30 @@ model ReconciliationItem {
   charge Charge?           @relation(fields: [chargeId], references: [id], onDelete: SetNull)
 
   @@map("reconciliation_items")
+}
+
+model IdempotencyRecord {
+  id               String   @id @default(uuid()) @db.Uuid
+  merchantId       String   @map("merchant_id") @db.Uuid
+  idempotencyKey   String   @map("idempotency_key") @db.VarChar(255)
+  requestHash      String?  @map("request_hash") @db.VarChar(64)
+  responseType     String   @map("response_type") @db.VarChar(255)
+  responsePayload  String?  @map("response_payload")
+  status           String   @db.VarChar(20)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([merchantId, idempotencyKey], map: "uq_idempotency_record")
+  @@map("idempotency_records")
+}
+
+model ProcessorCallback {
+  eventId          String    @id @map("event_id") @db.VarChar(255)
+  processorTxId    String    @map("processor_tx_id") @db.VarChar(255)
+  payloadHash      String    @map("payload_hash") @db.VarChar(64)
+  processingStatus String    @map("processing_status") @db.VarChar(30)
+  receivedAt       DateTime  @default(now()) @map("received_at") @db.Timestamptz(6)
+  processedAt      DateTime? @map("processed_at") @db.Timestamptz(6)
+
+  @@map("processor_callbacks")
 }

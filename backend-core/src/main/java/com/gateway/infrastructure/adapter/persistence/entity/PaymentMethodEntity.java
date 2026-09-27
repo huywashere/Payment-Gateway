@@ -44,8 +44,11 @@ public class PaymentMethodEntity {
     @Column(name = "vault_token", nullable = false, unique = true)
     private String vaultToken;
 
-    @Column(name = "encrypted_card_data", nullable = false, columnDefinition = "TEXT")
-    private String encryptedCardData;
+    @Column(name = "processor_token", nullable = false)
+    private String processorToken;
+
+    @Column(name = "encrypted_metadata", nullable = false, columnDefinition = "TEXT")
+    private String encryptedMetadata;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -21,10 +21,14 @@ public class PlatformAdminAuthenticationFilter extends OncePerRequestFilter {
     @Value("${gateway.security.platform-admin-key:}")
     private String configuredKey;
 
+    @Value("${gateway.security.platform-auth-mode:key}")
+    private String authenticationMode;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        if (request.getRequestURI().startsWith("/v1/platform/")) {
+        if ("key".equalsIgnoreCase(authenticationMode)
+                && request.getRequestURI().startsWith("/v1/platform/")) {
             String supplied = request.getHeader("X-Platform-Admin-Key");
             if (supplied != null && configuredKey != null && !configuredKey.isBlank()
                     && MessageDigest.isEqual(supplied.getBytes(StandardCharsets.UTF_8),
@@ -37,4 +41,3 @@ public class PlatformAdminAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 }
-

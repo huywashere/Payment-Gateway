@@ -20,7 +20,8 @@ public class ApiKeyService {
             "payments:read", "payments:write", "refunds:write", "balance:read",
             "webhooks:write", "keys:write", "audit:read", "payment_methods:write",
             "settlements:read", "settlements:write", "payouts:read", "payouts:write",
-            "disputes:read", "disputes:write", "risk:read", "risk:write", "reconciliation:read"
+            "disputes:read", "disputes:write", "risk:read", "risk:write", "reconciliation:read",
+            "customers:write"
     );
     private final ApiKeyRepository repository;
     private final ApiKeyHasher hasher;
@@ -111,7 +112,7 @@ public class ApiKeyService {
                 : Set.of("payments:read", "payments:write", "refunds:write", "balance:read", "webhooks:write",
                         "keys:write", "audit:read", "settlements:read", "settlements:write", "payouts:read",
                         "payouts:write", "disputes:read", "disputes:write", "risk:read", "risk:write",
-                        "reconciliation:read");
+                        "reconciliation:read", "customers:write");
         Set<String> result = requested == null || requested.isEmpty() ? defaults : new TreeSet<>(requested);
         if (!ALLOWED_SCOPES.containsAll(result)) throw new IllegalArgumentException("One or more API key scopes are unsupported");
         if ("PUBLISHABLE".equals(type) && !Set.of("payment_methods:write").containsAll(result)) {

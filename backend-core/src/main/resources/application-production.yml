@@ -28,16 +28,32 @@ spring:
     virtual-host: ${SPRING_RABBITMQ_VIRTUAL_HOST}
     ssl:
       enabled: ${SPRING_RABBITMQ_SSL_ENABLED:true}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${GATEWAY_PLATFORM_OIDC_ISSUER}
 
 gateway:
+  mode: ${GATEWAY_MODE:live}
+  processor:
+    mode: ${GATEWAY_PROCESSOR_MODE:live}
+    live-adapter: ${GATEWAY_LIVE_PROCESSOR_ADAPTER:placeholder}
+    live-payout-adapter: ${GATEWAY_LIVE_PAYOUT_ADAPTER:placeholder}
+  production:
+    external-controls-attested: ${GATEWAY_EXTERNAL_CONTROLS_ATTESTED:false}
   security:
-    card-vault-master-key: ${GATEWAY_VAULT_KEY}
+    card-vault-master-key: ${GATEWAY_VAULT_KEY:}
+    vault-provider: ${GATEWAY_VAULT_PROVIDER:kms}
+    kms-adapter: ${GATEWAY_KMS_ADAPTER:placeholder}
     allowed-origins: ${GATEWAY_ALLOWED_ORIGINS}
-    platform-admin-key: ${GATEWAY_PLATFORM_ADMIN_KEY}
+    platform-admin-key: ${GATEWAY_PLATFORM_ADMIN_KEY:}
+    platform-auth-mode: ${GATEWAY_PLATFORM_AUTH_MODE:oidc}
   webhooks:
     delivery-enabled: ${GATEWAY_WEBHOOK_DELIVERY_ENABLED:true}
     allow-private-endpoints: false
     require-https: true
+    store-response-body: false
   rate-limit:
     enabled: ${GATEWAY_RATE_LIMIT_ENABLED:true}
     fail-open: ${GATEWAY_RATE_LIMIT_FAIL_OPEN:false}

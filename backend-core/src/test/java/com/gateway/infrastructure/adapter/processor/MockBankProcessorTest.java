@@ -46,4 +46,20 @@ class MockBankProcessorTest {
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getErrorCode()).isEqualTo("payment_declined");
     }
+
+    @Test
+    void operationIdProducesSameReferenceAcrossProcessorInstances() {
+        BankProcessor.BankProcessRequest request = BankProcessor.BankProcessRequest.builder()
+                .operationId("pi_cross_replica")
+                .paymentMethodType("VIETQR")
+                .scenario("success")
+                .amount(150_000L)
+                .currency("VND")
+                .build();
+
+        String first = new MockBankProcessor().processPayment(request).getProcessorTransactionId();
+        String replay = new MockBankProcessor().processPayment(request).getProcessorTransactionId();
+
+        assertThat(replay).isEqualTo(first);
+    }
 }

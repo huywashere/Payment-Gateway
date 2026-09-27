@@ -14,6 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -30,6 +31,9 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     private final ApiKeyRepository apiKeyRepository;
     private final ApiKeyHasher apiKeyHasher;
     private final MerchantRepository merchantRepository;
+
+    @Value("${gateway.mode:sandbox}")
+    private String gatewayMode;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -62,7 +66,9 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
             boolean expired = key.getExpiresAt() != null && key.getExpiresAt().isBefore(OffsetDateTime.now());
             boolean merchantActive = merchantRepository.findById(key.getMerchantId())
                     .map(merchant -> "ACTIVE".equals(merchant.getStatus())).orElse(false);
-            if (expired || !merchantActive) {
+            String requiredEnvironment = "live".equalsIgnoreCase(gatewayMode) ? "LIVE" : "TEST";
+            boolean correctEnvironment = requiredEnvironment.equalsIgnoreCase(key.getEnvironment());
+            if (expired || !merchantActive || !correctEnvironment) {
                 filterChain.doFilter(request, response);
                 return;
             }

@@ -35,6 +35,8 @@ public class WebhookDeliveryWorker {
     private boolean deliveryEnabled;
     @Value("${gateway.webhooks.max-attempts:5}")
     private int maxAttempts;
+    @Value("${gateway.webhooks.store-response-body:false}")
+    private boolean storeResponseBody;
 
     @Scheduled(fixedDelayString = "${gateway.webhooks.poll-interval-ms:2000}")
     @Transactional
@@ -70,8 +72,8 @@ public class WebhookDeliveryWorker {
                     .POST(HttpRequest.BodyPublishers.ofString(delivery.getRequestPayload())).build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             delivery.setResponseStatus(response.statusCode());
-            delivery.setResponseBody(truncate(response.body(), 4096));
-            delivery.setRequestHeaders("{\"Gateway-Signature\":\"" + signature + "\"}");
+            delivery.setResponseBody(storeResponseBody ? truncate(response.body(), 4096) : null);
+            delivery.setRequestHeaders("{\"signature\":\"redacted\"}");
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 delivery.setStatus("SUCCESS");
                 delivery.setErrorMessage(null);

@@ -23,14 +23,14 @@ public class CustomerEntity {
     @Column(name = "merchant_id", nullable = false)
     private UUID merchantId;
 
-    @Column(name = "email")
-    private String email;
+    @Column(name = "encrypted_pii", columnDefinition = "TEXT")
+    private String encryptedPii;
 
-    @Column(name = "full_name")
-    private String fullName;
+    @Column(name = "email_domain", length = 255)
+    private String emailDomain;
 
-    @Column(name = "phone")
-    private String phone;
+    @Column(name = "pii_erased_at")
+    private OffsetDateTime piiErasedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
