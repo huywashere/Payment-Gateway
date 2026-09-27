@@ -18,6 +18,8 @@ import {
   ArrowLeft,
   Database,
   CreditCard,
+  KeyRound,
+  Landmark,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BankLogo } from '@/components/BankLogos';
@@ -200,6 +202,12 @@ export default function DashboardPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
+          <Link href="/developers" className="btn-glass" style={{ padding: '9px 18px', fontSize: '0.85rem' }}>
+            <KeyRound size={15} /> Developer settings
+          </Link>
+          <Link href="/operations" className="btn-glass" style={{ padding: '9px 18px', fontSize: '0.85rem' }}>
+            <Landmark size={15} /> Money operations
+          </Link>
           <button
             id="btn-refresh-balance"
             onClick={fetchBalance}

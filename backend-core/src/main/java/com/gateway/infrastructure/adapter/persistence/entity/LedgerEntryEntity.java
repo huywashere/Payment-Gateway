@@ -23,6 +23,18 @@ public class LedgerEntryEntity {
     @Column(name = "charge_id")
     private UUID chargeId;
 
+    @Column(name = "refund_id")
+    private UUID refundId;
+
+    @Column(name = "settlement_id")
+    private UUID settlementId;
+
+    @Column(name = "payout_id")
+    private UUID payoutId;
+
+    @Column(name = "dispute_id")
+    private UUID disputeId;
+
     @Column(name = "debit_account_id", nullable = false)
     private UUID debitAccountId;
 

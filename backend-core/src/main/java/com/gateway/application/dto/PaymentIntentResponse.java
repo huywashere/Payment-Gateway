@@ -25,6 +25,8 @@ public class PaymentIntentResponse {
     private String paymentMethodToken;
     private String nextActionUrl;
     private String failureMessage;
+    private String failureCode;
+    private UUID latestChargeId;
     private Map<String, Object> metadata;
     private OffsetDateTime createdAt;
 }

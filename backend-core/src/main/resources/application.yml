@@ -37,12 +37,26 @@ spring:
 
 # Gateway Custom Configurations
 gateway:
+  security:
+    platform-admin-key: ${GATEWAY_PLATFORM_ADMIN_KEY:}
   fee:
     fixed-fee-vnd: ${GATEWAY_FIXED_FEE_VND:2000}
     percentage-fee: ${GATEWAY_PERCENTAGE_FEE:0.015}
   idempotency:
     ttl-seconds: ${GATEWAY_IDEMPOTENCY_TTL_SECONDS:86400}
     lock-timeout-seconds: ${GATEWAY_IDEMPOTENCY_LOCK_SECONDS:30}
+  webhooks:
+    delivery-enabled: ${GATEWAY_WEBHOOK_DELIVERY_ENABLED:false}
+    allow-private-endpoints: ${GATEWAY_WEBHOOK_ALLOW_PRIVATE_ENDPOINTS:false}
+    max-attempts: ${GATEWAY_WEBHOOK_MAX_ATTEMPTS:5}
+    poll-interval-ms: ${GATEWAY_WEBHOOK_POLL_INTERVAL_MS:2000}
+    require-https: ${GATEWAY_WEBHOOK_REQUIRE_HTTPS:false}
+  rate-limit:
+    enabled: ${GATEWAY_RATE_LIMIT_ENABLED:false}
+    requests-per-minute: ${GATEWAY_RATE_LIMIT_REQUESTS_PER_MINUTE:300}
+    checkout-requests-per-minute: ${GATEWAY_RATE_LIMIT_CHECKOUT_PER_MINUTE:120}
+    platform-requests-per-minute: ${GATEWAY_RATE_LIMIT_PLATFORM_PER_MINUTE:60}
+    fail-open: ${GATEWAY_RATE_LIMIT_FAIL_OPEN:true}
 
 # Springdoc OpenAPI / Swagger UI
 springdoc:

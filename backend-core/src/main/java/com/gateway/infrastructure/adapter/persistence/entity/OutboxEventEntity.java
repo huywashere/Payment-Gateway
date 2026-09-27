@@ -17,7 +17,6 @@ import java.util.UUID;
 public class OutboxEventEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "aggregate_type", nullable = false, length = 100)

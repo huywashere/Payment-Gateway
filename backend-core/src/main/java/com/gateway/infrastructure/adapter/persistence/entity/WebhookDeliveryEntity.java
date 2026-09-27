@@ -3,6 +3,7 @@ package com.gateway.infrastructure.adapter.persistence.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -25,6 +26,9 @@ public class WebhookDeliveryEntity {
 
     @Column(name = "event_id", nullable = false)
     private UUID eventId;
+
+    @Column(name = "endpoint_id")
+    private UUID endpointId;
 
     @Column(name = "endpoint_url", nullable = false, length = 500)
     private String endpointUrl;
@@ -53,7 +57,17 @@ public class WebhookDeliveryEntity {
     @Column(name = "status", nullable = false, length = 50)
     private String status; // SUCCESS, FAILED, RETRYING
 
+    @Column(name = "next_attempt_at")
+    private OffsetDateTime nextAttemptAt;
+
+    @Column(name = "error_message", columnDefinition = "TEXT")
+    private String errorMessage;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
 }

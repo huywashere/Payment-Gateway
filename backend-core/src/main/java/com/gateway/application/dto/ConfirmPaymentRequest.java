@@ -13,4 +13,6 @@ public class ConfirmPaymentRequest {
     private String paymentMethodId; // existing vault token pm_card_...
     private CardPayload card;
     private String returnUrl;
+    private String paymentMethodType;
+    private String scenario;
 }

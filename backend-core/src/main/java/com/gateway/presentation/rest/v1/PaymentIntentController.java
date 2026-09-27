@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -30,6 +31,7 @@ public class PaymentIntentController {
     private final LedgerService ledgerService;
 
     @PostMapping("/payment_intents")
+    @PreAuthorize("hasAnyAuthority('SCOPE_payments:write', 'SCOPE_*')")
     @Operation(summary = "Create a PaymentIntent with optional Idempotency-Key")
     public ResponseEntity<PaymentIntentResponse> createPaymentIntent(
             Authentication authentication,
@@ -42,21 +44,30 @@ public class PaymentIntentController {
     }
 
     @PostMapping("/payment_intents/{id}/confirm")
+    @PreAuthorize("hasAnyAuthority('SCOPE_payments:write', 'SCOPE_*')")
     @Operation(summary = "Confirm a PaymentIntent to execute transaction")
     public ResponseEntity<PaymentIntentResponse> confirmPaymentIntent(
             Authentication authentication,
             @PathVariable UUID id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody ConfirmPaymentRequest request) {
 
         UUID merchantId = (UUID) authentication.getPrincipal();
         paymentIntentRepository.findById(id)
                 .filter(intent -> intent.getMerchantId().equals(merchantId))
                 .orElseThrow(() -> new IllegalArgumentException("PaymentIntent not found: " + id));
-        PaymentIntentResponse response = paymentIntentService.confirmPaymentIntent(id, request);
+        PaymentIntentResponse response = paymentIntentService.confirmPaymentIntent(merchantId, id, idempotencyKey, request);
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/payment_intents/{id}/cancel")
+    @PreAuthorize("hasAnyAuthority('SCOPE_payments:write', 'SCOPE_*')")
+    public ResponseEntity<PaymentIntentResponse> cancelPaymentIntent(Authentication authentication, @PathVariable UUID id) {
+        return ResponseEntity.ok(paymentIntentService.cancel((UUID) authentication.getPrincipal(), id));
+    }
+
     @GetMapping("/payment_intents/{id}")
+    @PreAuthorize("hasAnyAuthority('SCOPE_payments:read', 'SCOPE_*')")
     @Operation(summary = "Retrieve a PaymentIntent by ID")
     public ResponseEntity<PaymentIntentEntity> getPaymentIntent(
             Authentication authentication,
@@ -70,16 +81,22 @@ public class PaymentIntentController {
     }
 
     @GetMapping("/balance")
+    @PreAuthorize("hasAnyAuthority('SCOPE_balance:read', 'SCOPE_*')")
     @Operation(summary = "Get Merchant Ledger Balance (Double-Entry calculation)")
     public ResponseEntity<Map<String, Object>> getMerchantBalance(Authentication authentication) {
         UUID merchantId = (UUID) authentication.getPrincipal();
+        long pendingBalance = ledgerService.getMerchantPendingBalance(merchantId);
         long availableBalance = ledgerService.getMerchantAvailableBalance(merchantId);
+        long disputeReserve = ledgerService.getMerchantDisputeReserve(merchantId);
 
         return ResponseEntity.ok(Map.of(
                 "object", "balance",
                 "merchant_id", merchantId.toString(),
                 "currency", "VND",
-                "available_balance", availableBalance
+                "pending_balance", pendingBalance,
+                "available_balance", availableBalance,
+                "dispute_reserve", disputeReserve,
+                "total_balance", pendingBalance + availableBalance + disputeReserve
         ));
     }
 }

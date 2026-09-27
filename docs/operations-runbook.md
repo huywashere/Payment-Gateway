@@ -72,3 +72,13 @@ Do not restart databases or delete volumes before collecting logs and confirming
 - Keep Grafana, Prometheus, Loki, Alertmanager, Alloy, and backend port `9090` on private networks.
 - Back up Grafana configuration, Prometheus rules, and application databases; metrics and logs should follow the retention and compliance policy for the deployment.
 - Restrict Docker socket access. In Kubernetes, use the platform-native Alloy deployment instead of mounting a host Docker socket.
+
+## Money operations triage
+
+Call `GET /v1/platform/operations/readiness` from the operator network before and after incident mitigation.
+
+- `failed_outbox_events > 0`: preserve the rows and broker logs, correct the dependency failure, then replay through a controlled operator procedure. Never mark financial events published without verifying RabbitMQ receipt.
+- `failed_webhook_deliveries > 0`: confirm endpoint DNS/TLS and replay individual deliveries from the merchant control plane. Do not weaken the private-address policy.
+- `open_disputes > 0`: check due dates and evidence completeness; unresolved disputes keep funds in the reserve account.
+- `reconciliation_runs_requiring_review > 0`: investigate each missing/amount/status mismatch before settlement or payout approval.
+- A `429` indicates an active rate limit. A production `503 rate_limiter_unavailable` means Redis protection is unavailable and the API intentionally failed closed.

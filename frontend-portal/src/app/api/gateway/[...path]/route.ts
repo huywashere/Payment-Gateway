@@ -1,5 +1,21 @@
-const PUBLIC_CHECKOUT_PATH = /^v1\/checkout\/[A-Za-z0-9_-]+(?:\/pay)?$/;
-const PRIVATE_PATHS = new Set(['v1/balance', 'v1/payment_intents']);
+const PUBLIC_CHECKOUT_PATH = /^v1\/checkout\/[A-Za-z0-9_-]+(?:\/(?:pay|sandbox\/(?:complete|action)))?$/;
+const PRIVATE_ROUTES: Array<{ pattern: RegExp; methods: string[] }> = [
+  { pattern: /^v1\/balance$/, methods: ['GET'] },
+  { pattern: /^v1\/payment_intents$/, methods: ['POST'] },
+  { pattern: /^v1\/payment_intents\/[0-9a-f-]+$/, methods: ['GET'] },
+  { pattern: /^v1\/payment_intents\/[0-9a-f-]+\/(?:confirm|cancel)$/, methods: ['POST'] },
+  { pattern: /^v1\/charges\/[0-9a-f-]+\/refunds$/, methods: ['POST'] },
+  { pattern: /^v1\/charges\/[0-9a-f-]+$/, methods: ['GET'] },
+  { pattern: /^v1\/(?:api_keys|webhooks\/endpoints|webhooks\/deliveries|audit_logs)$/, methods: ['GET', 'POST'] },
+  { pattern: /^v1\/api_keys\/[0-9a-f-]+(?:\/rotate)?$/, methods: ['POST', 'DELETE'] },
+  { pattern: /^v1\/webhooks\/(?:endpoints|deliveries)\/[0-9a-f-]+(?:\/replay)?$/, methods: ['POST', 'DELETE'] },
+  { pattern: /^v1\/payment_methods$/, methods: ['POST'] },
+  { pattern: /^v1\/(?:settlements|payouts)$/, methods: ['GET', 'POST'] },
+  { pattern: /^v1\/disputes$/, methods: ['GET'] },
+  { pattern: /^v1\/disputes\/[0-9a-f-]+\/evidence$/, methods: ['POST'] },
+  { pattern: /^v1\/risk\/(?:profile|evaluations)$/, methods: ['GET', 'PUT'] },
+  { pattern: /^v1\/reconciliation_runs(?:\/[0-9a-f-]+)?$/, methods: ['GET'] },
+];
 
 function getServerConfig() {
   const coreUrl = process.env.GATEWAY_CORE_URL?.trim();
@@ -20,12 +36,7 @@ function isAllowed(pathname: string, method: string) {
     return method === 'GET' || method === 'POST';
   }
 
-  if (PRIVATE_PATHS.has(pathname)) {
-    return (pathname === 'v1/balance' && method === 'GET') ||
-      (pathname === 'v1/payment_intents' && method === 'POST');
-  }
-
-  return false;
+  return PRIVATE_ROUTES.some((route) => route.pattern.test(pathname) && route.methods.includes(method));
 }
 
 async function proxyToCore(request: Request, context: RouteContext<'/api/gateway/[...path]'>) {
@@ -60,7 +71,8 @@ async function proxyToCore(request: Request, context: RouteContext<'/api/gateway
     : await request.arrayBuffer();
 
   try {
-    const upstream = await fetch(`${serverConfig.coreUrl}/${pathname}`, {
+    const query = new URL(request.url).search;
+    const upstream = await fetch(`${serverConfig.coreUrl}/${pathname}${query}`, {
       method: request.method,
       headers,
       body,
@@ -73,6 +85,7 @@ async function proxyToCore(request: Request, context: RouteContext<'/api/gateway
       headers: {
         'content-type': upstream.headers.get('content-type') ?? 'application/json',
         'cache-control': 'no-store',
+        ...(upstream.headers.get('x-request-id') ? { 'x-request-id': upstream.headers.get('x-request-id')! } : {}),
       },
     });
   } catch {
@@ -85,3 +98,5 @@ async function proxyToCore(request: Request, context: RouteContext<'/api/gateway
 
 export const GET = proxyToCore;
 export const POST = proxyToCore;
+export const PUT = proxyToCore;
+export const DELETE = proxyToCore;

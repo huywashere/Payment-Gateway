@@ -42,8 +42,21 @@ public class PaymentIntentEntity {
     @Column(name = "client_secret", nullable = false, unique = true)
     private String clientSecret;
 
-    @Column(name = "idempotency_key", unique = true)
+    @Column(name = "idempotency_key")
     private String idempotencyKey;
+
+    @Column(name = "request_hash", length = 64)
+    private String requestHash;
+
+    @Column(name = "last_error_code", length = 100)
+    private String lastErrorCode;
+
+    @Column(name = "canceled_at")
+    private OffsetDateTime canceledAt;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
 
     @Column(name = "payment_method_id")
     private UUID paymentMethodId;

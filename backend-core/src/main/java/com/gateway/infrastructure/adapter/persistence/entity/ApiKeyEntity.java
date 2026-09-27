@@ -40,6 +40,23 @@ public class ApiKeyEntity {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "display_name", nullable = false, length = 100)
+    @Builder.Default
+    private String displayName = "Default key";
+
+    @Column(name = "scopes", nullable = false, columnDefinition = "TEXT")
+    @Builder.Default
+    private String scopes = "*";
+
+    @Column(name = "last_used_at")
+    private OffsetDateTime lastUsedAt;
+
+    @Column(name = "expires_at")
+    private OffsetDateTime expiresAt;
+
+    @Column(name = "revoked_at")
+    private OffsetDateTime revokedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

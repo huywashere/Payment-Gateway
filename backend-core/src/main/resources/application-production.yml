@@ -33,6 +33,21 @@ gateway:
   security:
     card-vault-master-key: ${GATEWAY_VAULT_KEY}
     allowed-origins: ${GATEWAY_ALLOWED_ORIGINS}
+    platform-admin-key: ${GATEWAY_PLATFORM_ADMIN_KEY}
+  webhooks:
+    delivery-enabled: ${GATEWAY_WEBHOOK_DELIVERY_ENABLED:true}
+    allow-private-endpoints: false
+    require-https: true
+  rate-limit:
+    enabled: ${GATEWAY_RATE_LIMIT_ENABLED:true}
+    fail-open: ${GATEWAY_RATE_LIMIT_FAIL_OPEN:false}
+
+server:
+  max-http-request-header-size: 16KB
+  tomcat:
+    connection-timeout: 10s
+    keep-alive-timeout: 30s
+    max-keep-alive-requests: 100
 
 springdoc:
   api-docs:

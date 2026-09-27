@@ -11,6 +11,23 @@ public class MockBankProcessor implements BankProcessor {
 
     @Override
     public BankProcessResponse processPayment(BankProcessRequest request) {
+        String scenario = request.getScenario() == null ? "" : request.getScenario().toLowerCase();
+        if ("insufficient_funds".equals(scenario)) {
+            return failure("insufficient_funds", "The sandbox account has insufficient funds.");
+        }
+        if ("declined".equals(scenario)) {
+            return failure("payment_declined", "The sandbox payment was declined.");
+        }
+        if ("requires_action".equals(scenario)) {
+            return BankProcessResponse.builder().requiresAction(true)
+                    .actionUrl("/sandbox/3ds?session=" + UUID.randomUUID()).build();
+        }
+        if ("timeout".equals(scenario)) {
+            return failure("processor_timeout", "The sandbox processor timed out.");
+        }
+        if ("VIETQR".equalsIgnoreCase(request.getPaymentMethodType()) && "success".equals(scenario)) {
+            return success("vietqr");
+        }
         String card = request.getRawCardNumber() != null
                 ? request.getRawCardNumber().replace(" ", "").replace("-", "")
                 : "";
@@ -20,10 +37,7 @@ public class MockBankProcessor implements BankProcessor {
 
         // Simulate 4242 4242 4242 4242 -> Success
         if (card.startsWith("4242")) {
-            return BankProcessResponse.builder()
-                    .success(true)
-                    .processorTransactionId("bank_visa_" + UUID.randomUUID().toString().substring(0, 16))
-                    .build();
+            return success("visa");
         }
 
         // Simulate 4000 0000 0000 0002 -> Insufficient funds
@@ -55,10 +69,7 @@ public class MockBankProcessor implements BankProcessor {
 
         // Default: If card format is at least 15-16 digits, succeed
         if (card.length() >= 15) {
-            return BankProcessResponse.builder()
-                    .success(true)
-                    .processorTransactionId("bank_gen_" + UUID.randomUUID().toString().substring(0, 16))
-                    .build();
+            return success("card");
         }
 
         return BankProcessResponse.builder()
@@ -66,5 +77,15 @@ public class MockBankProcessor implements BankProcessor {
                 .errorCode("invalid_card_number")
                 .errorMessage("The card number provided is invalid.")
                 .build();
+    }
+
+    private BankProcessResponse success(String method) {
+        return BankProcessResponse.builder().success(true)
+                .processorTransactionId("bank_" + method + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16))
+                .build();
+    }
+
+    private BankProcessResponse failure(String code, String message) {
+        return BankProcessResponse.builder().success(false).errorCode(code).errorMessage(message).build();
     }
 }

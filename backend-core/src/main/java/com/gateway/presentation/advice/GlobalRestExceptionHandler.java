@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.util.Map;
 
@@ -41,6 +42,17 @@ public class GlobalRestExceptionHandler {
                         "type", "invalid_request_error",
                         "code", "state_invalid",
                         "message", ex.getMessage()
+                )
+        ));
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Map<String, Object>> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "error", Map.of(
+                        "type", "concurrency_error",
+                        "code", "resource_modified",
+                        "message", "The resource was modified by another request. Retrieve it and retry."
                 )
         ));
     }

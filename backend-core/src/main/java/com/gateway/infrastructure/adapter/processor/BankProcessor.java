@@ -14,6 +14,8 @@ public interface BankProcessor {
         private Integer expMonth;
         private Integer expYear;
         private String cvv;
+        private String paymentMethodType;
+        private String scenario;
         private Long amount;
         private String currency;
         private String orderDescription;

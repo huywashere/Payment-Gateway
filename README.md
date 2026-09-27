@@ -31,6 +31,16 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
    - Frontend Next.js 16 tích hợp **Prisma ORM** kết nối trực tiếp vào PostgreSQL để truy vấn số dư và giao dịch thời gian thực.
    - Giao diện Dark Mode Isometric Clone chuẩn thiết kế `apipay.vn` với logo ngân hàng vector sắc nét (MB, ACB, BIDV, VCB, TPBank...) và trình giả lập VietQR Napas 24/7.
 
+7. **Merchant Platform & Sandbox Developer Experience:**
+   - Onboarding merchant, scoped API key, rotate/revoke, audit log và quản lý webhook endpoint.
+   - Refund một phần/toàn phần, retry/replay webhook và bộ JavaScript SDK cho server/browser sandbox.
+   - Hosted checkout giả lập CARD, VietQR và luồng 3DS `requires_action` mà không lưu PAN/CVC.
+
+8. **Money Operations & Production Controls:**
+   - Risk scoring trước processor, settlement pending → available, payout có idempotency và dispute reserve.
+   - Reconciliation cấp transaction, operational readiness, Redis rate limit và worker multi-instance `SKIP LOCKED`.
+   - Ledger/audit append-only ở tầng PostgreSQL và webhook HTTPS/SSRF policy được kiểm tra lại khi delivery.
+
 ---
 
 ## 🛠 Tech Stack
@@ -129,6 +139,8 @@ Spring Boot mặc định dùng profile `local`. Container development dùng pro
 Mỗi pull request chạy Maven test với dependencies thật, frontend lint/build, Docker Compose validation, image build, dependency review, Trivy image scan và CodeQL. Trivy đưa toàn bộ cảnh báo `HIGH`/`CRITICAL` lên GitHub Security và chặn phát hành khi còn lỗ hổng `CRITICAL` đã có bản vá. Commit trên `main` vượt toàn bộ quality gate sẽ phát hành hai image lên GitHub Container Registry với tag `latest`, `sha-<commit>`, SBOM và provenance attestation.
 
 Runbook xử lý sự cố và ý nghĩa cảnh báo nằm trong [`docs/operations-runbook.md`](docs/operations-runbook.md).
+Phạm vi và cách kiểm thử giai đoạn 6-8 nằm trong [`docs/stages-6-8.md`](docs/stages-6-8.md).
+Money operations và hardening giai đoạn 9-10 nằm trong [`docs/stages-9-10.md`](docs/stages-9-10.md).
 
 ---
 

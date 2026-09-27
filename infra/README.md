@@ -72,4 +72,8 @@ docker compose `
 
 Use the Spring profile `production`. Every database, broker, cache, vault, origin, and portal secret in that profile is required and has no development fallback. The `.env.production.example` file is a schema only; real values belong in a managed secret store and must never be committed.
 
+`GATEWAY_PLATFORM_ADMIN_KEY` protects merchant onboarding and must be generated and stored separately from merchant API keys. Keep `GATEWAY_WEBHOOK_ALLOW_PRIVATE_ENDPOINTS=false` in production. Webhook delivery is enabled explicitly with `GATEWAY_WEBHOOK_DELIVERY_ENABLED=true`; route outbound traffic through controlled egress before accepting arbitrary merchant endpoints.
+
+Production enables Redis-backed request limits and fails closed by default. Tune the three per-minute limits from observed traffic, not by disabling the filter. `GATEWAY_WEBHOOK_REQUIRE_HTTPS=true` must remain enabled. The platform operations API should be reachable only from the operator network even though it also requires the administrator key.
+
 The backend production management server listens on port `9090` and exposes only health, info, and Prometheus endpoints. Keep that port on a private monitoring network; never publish it directly to the internet.

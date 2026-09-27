@@ -3,6 +3,7 @@ package com.gateway.presentation.rest.v1;
 import com.gateway.application.dto.CardPayload;
 import com.gateway.application.dto.ConfirmPaymentRequest;
 import com.gateway.application.dto.PaymentIntentResponse;
+import com.gateway.application.dto.SandboxCheckoutRequest;
 import com.gateway.application.service.PaymentIntentService;
 import com.gateway.infrastructure.adapter.persistence.entity.PaymentIntentEntity;
 import com.gateway.infrastructure.adapter.persistence.repository.PaymentIntentRepository;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/v1/checkout")
@@ -53,5 +55,22 @@ public class CheckoutController {
 
         PaymentIntentResponse response = paymentIntentService.confirmPaymentIntent(intent.getId(), request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{clientSecret}/sandbox/complete")
+    @Operation(summary = "Complete a sandbox Card or VietQR payment")
+    public ResponseEntity<PaymentIntentResponse> completeSandboxPayment(
+            @PathVariable String clientSecret,
+            @Valid @RequestBody SandboxCheckoutRequest request) {
+        return ResponseEntity.ok(paymentIntentService.confirmSandbox(clientSecret, request));
+    }
+
+    @PostMapping("/{clientSecret}/sandbox/action")
+    @Operation(summary = "Complete a sandbox 3DS action")
+    public ResponseEntity<PaymentIntentResponse> completeSandboxAction(
+            @PathVariable String clientSecret,
+            @RequestBody Map<String, Boolean> request) {
+        return ResponseEntity.ok(paymentIntentService.completeRequiredAction(
+                clientSecret, Boolean.TRUE.equals(request.get("success"))));
     }
 }

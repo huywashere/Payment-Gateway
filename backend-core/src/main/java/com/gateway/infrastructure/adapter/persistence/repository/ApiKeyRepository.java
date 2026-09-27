@@ -12,4 +12,6 @@ import java.util.UUID;
 
 public interface ApiKeyRepository extends JpaRepository<ApiKeyEntity, UUID> {
     Optional<ApiKeyEntity> findBySecretHashAndIsActiveTrue(String secretHash);
+    List<ApiKeyEntity> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
+    Optional<ApiKeyEntity> findByIdAndMerchantId(UUID id, UUID merchantId);
 }

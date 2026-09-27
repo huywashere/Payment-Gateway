@@ -24,6 +24,15 @@ model Merchant {
   charges           Charge[]
   ledgerAccounts    LedgerAccount[]
   webhookDeliveries WebhookDelivery[]
+  webhookEndpoints  WebhookEndpoint[]
+  refunds           Refund[]
+  auditLogs         AuditLog[]
+  riskProfile       RiskProfile?
+  riskEvaluations   RiskEvaluation[]
+  settlements       Settlement[]
+  payouts           Payout[]
+  disputes          Dispute[]
+  reconciliationRuns ReconciliationRun[]
 
   @@map("merchants")
 }
@@ -37,6 +46,11 @@ model ApiKey {
   environment String   @default("TEST") @db.VarChar(20)
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  displayName String   @default("Default key") @map("display_name") @db.VarChar(100)
+  scopes      String   @default("*")
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz(6)
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz(6)
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(6)
 
   merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
@@ -89,8 +103,12 @@ model PaymentIntent {
   status          String   @db.VarChar(50)
   clientSecret    String   @unique @map("client_secret") @db.VarChar(255)
   description     String?  @db.VarChar(500)
-  idempotencyKey  String?  @unique @map("idempotency_key") @db.VarChar(255)
+  idempotencyKey  String?  @map("idempotency_key") @db.VarChar(255)
   metadata        Json?
+  requestHash     String?  @map("request_hash") @db.VarChar(64)
+  lastErrorCode   String?  @map("last_error_code") @db.VarChar(100)
+  canceledAt      DateTime? @map("canceled_at") @db.Timestamptz(6)
+  version         BigInt   @default(0)
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -98,7 +116,9 @@ model PaymentIntent {
   customer      Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
   charges       Charge[]
+  riskEvaluations RiskEvaluation[]
 
+  @@index([merchantId, idempotencyKey])
   @@map("payment_intents")
 }
 
@@ -120,6 +140,10 @@ model Charge {
   merchant      Merchant       @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
   ledgerEntries LedgerEntry[]
+  refunds       Refund[]
+  settlementItem SettlementItem?
+  disputes      Dispute[]
+  reconciliationItems ReconciliationItem[]
 
   @@map("charges")
 }
@@ -136,6 +160,7 @@ model LedgerAccount {
   merchant      Merchant?     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   debitEntries  LedgerEntry[] @relation("DebitAccount")
   creditEntries LedgerEntry[] @relation("CreditAccount")
+  disputeSources Dispute[]
 
   @@map("ledger_accounts")
 }
@@ -143,6 +168,10 @@ model LedgerAccount {
 model LedgerEntry {
   id              String   @id @default(uuid()) @db.Uuid
   chargeId        String?  @map("charge_id") @db.Uuid
+  refundId        String?  @map("refund_id") @db.Uuid
+  settlementId    String?  @map("settlement_id") @db.Uuid
+  payoutId        String?  @map("payout_id") @db.Uuid
+  disputeId       String?  @map("dispute_id") @db.Uuid
   debitAccountId  String   @map("debit_account_id") @db.Uuid
   creditAccountId String   @map("credit_account_id") @db.Uuid
   amount          BigInt
@@ -151,6 +180,10 @@ model LedgerEntry {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   charge        Charge?       @relation(fields: [chargeId], references: [id], onDelete: SetNull)
+  refund        Refund?       @relation(fields: [refundId], references: [id], onDelete: SetNull)
+  settlement    Settlement?   @relation(fields: [settlementId], references: [id], onDelete: SetNull)
+  payout        Payout?       @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  dispute       Dispute?      @relation(fields: [disputeId], references: [id], onDelete: SetNull)
   debitAccount  LedgerAccount @relation("DebitAccount", fields: [debitAccountId], references: [id])
   creditAccount LedgerAccount @relation("CreditAccount", fields: [creditAccountId], references: [id])
 
@@ -176,6 +209,7 @@ model WebhookDelivery {
   id             String   @id @default(uuid()) @db.Uuid
   merchantId     String   @map("merchant_id") @db.Uuid
   eventId        String   @map("event_id") @db.Uuid
+  endpointId     String?  @map("endpoint_id") @db.Uuid
   endpointUrl    String   @map("endpoint_url") @db.VarChar(500)
   requestHeaders Json?    @map("request_headers")
   requestPayload Json?    @map("request_payload")
@@ -184,10 +218,228 @@ model WebhookDelivery {
   durationMs     Int?     @map("duration_ms")
   attempt        Int      @default(1)
   status         String   @db.VarChar(50)
+  nextAttemptAt  DateTime? @map("next_attempt_at") @db.Timestamptz(6)
+  errorMessage   String?  @map("error_message")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   merchant    Merchant    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
   outboxEvent OutboxEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  endpoint    WebhookEndpoint? @relation(fields: [endpointId], references: [id], onDelete: SetNull)
 
   @@map("webhook_deliveries")
+}
+
+model Refund {
+  id                String   @id @default(uuid()) @db.Uuid
+  chargeId          String   @map("charge_id") @db.Uuid
+  merchantId        String   @map("merchant_id") @db.Uuid
+  amount            BigInt
+  currency          String   @db.VarChar(3)
+  status            String   @db.VarChar(50)
+  reason            String?  @db.VarChar(255)
+  processorRefundId String?  @map("processor_refund_id") @db.VarChar(255)
+  idempotencyKey    String?  @map("idempotency_key") @db.VarChar(255)
+  failureMessage    String?  @map("failure_message")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  charge        Charge        @relation(fields: [chargeId], references: [id])
+  merchant      Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  ledgerEntries LedgerEntry[]
+
+  @@map("refunds")
+}
+
+model WebhookEndpoint {
+  id               String   @id @default(uuid()) @db.Uuid
+  merchantId       String   @map("merchant_id") @db.Uuid
+  url              String   @db.VarChar(500)
+  description      String?  @db.VarChar(255)
+  signingSecret    String   @map("signing_secret") @db.VarChar(255)
+  subscribedEvents String   @default("*") @map("subscribed_events")
+  status           String   @default("ACTIVE") @db.VarChar(30)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  merchant   Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@map("webhook_endpoints")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  merchantId   String?  @map("merchant_id") @db.Uuid
+  actorType    String   @map("actor_type") @db.VarChar(30)
+  actorId      String   @map("actor_id") @db.VarChar(255)
+  action       String   @db.VarChar(100)
+  resourceType String   @map("resource_type") @db.VarChar(100)
+  resourceId   String?  @map("resource_id") @db.VarChar(255)
+  requestId    String?  @map("request_id") @db.VarChar(100)
+  ipAddress    String?  @map("ip_address") @db.VarChar(64)
+  details      Json?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  merchant Merchant? @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model RiskProfile {
+  merchantId             String   @id @map("merchant_id") @db.Uuid
+  enabled                Boolean  @default(true)
+  maxTransactionAmount   BigInt   @default(50000000) @map("max_transaction_amount")
+  dailyVolumeLimit       BigInt   @default(500000000) @map("daily_volume_limit")
+  velocityLimitPerMinute Int      @default(20) @map("velocity_limit_per_minute")
+  reviewScoreThreshold   Int      @default(50) @map("review_score_threshold")
+  blockScoreThreshold    Int      @default(80) @map("block_score_threshold")
+  blockedEmailDomains    String   @default("") @map("blocked_email_domains")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@map("risk_profiles")
+}
+
+model RiskEvaluation {
+  id              String   @id @default(uuid()) @db.Uuid
+  merchantId      String   @map("merchant_id") @db.Uuid
+  paymentIntentId String   @map("payment_intent_id") @db.Uuid
+  decision        String   @db.VarChar(20)
+  score           Int
+  reasons         Json
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  merchant      Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  paymentIntent PaymentIntent @relation(fields: [paymentIntentId], references: [id], onDelete: Cascade)
+
+  @@map("risk_evaluations")
+}
+
+model Settlement {
+  id             String   @id @default(uuid()) @db.Uuid
+  merchantId     String   @map("merchant_id") @db.Uuid
+  currency       String   @db.VarChar(3)
+  periodStart    DateTime @map("period_start") @db.Timestamptz(6)
+  periodEnd      DateTime @map("period_end") @db.Timestamptz(6)
+  grossAmount    BigInt   @default(0) @map("gross_amount")
+  feeAmount      BigInt   @default(0) @map("fee_amount")
+  refundAmount   BigInt   @default(0) @map("refund_amount")
+  netAmount      BigInt   @default(0) @map("net_amount")
+  chargeCount    Int      @default(0) @map("charge_count")
+  status         String   @db.VarChar(30)
+  idempotencyKey String   @map("idempotency_key") @db.VarChar(255)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  finalizedAt    DateTime? @map("finalized_at") @db.Timestamptz(6)
+
+  merchant     Merchant         @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  items        SettlementItem[]
+  payouts      Payout[]
+  ledgerEntries LedgerEntry[]
+
+  @@unique([merchantId, idempotencyKey])
+  @@map("settlements")
+}
+
+model SettlementItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  settlementId String   @map("settlement_id") @db.Uuid
+  chargeId     String   @unique @map("charge_id") @db.Uuid
+  grossAmount  BigInt   @map("gross_amount")
+  feeAmount    BigInt   @map("fee_amount")
+  refundAmount BigInt   @map("refund_amount")
+  netAmount    BigInt   @map("net_amount")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  settlement Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  charge     Charge     @relation(fields: [chargeId], references: [id])
+
+  @@map("settlement_items")
+}
+
+model Payout {
+  id                   String   @id @default(uuid()) @db.Uuid
+  merchantId           String   @map("merchant_id") @db.Uuid
+  settlementId         String?  @map("settlement_id") @db.Uuid
+  amount               BigInt
+  currency             String   @db.VarChar(3)
+  status               String   @db.VarChar(30)
+  destinationReference String   @map("destination_reference") @db.VarChar(100)
+  description          String?  @db.VarChar(255)
+  processorPayoutId    String?  @map("processor_payout_id") @db.VarChar(255)
+  idempotencyKey       String   @map("idempotency_key") @db.VarChar(255)
+  failureMessage       String?  @map("failure_message")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  paidAt               DateTime? @map("paid_at") @db.Timestamptz(6)
+
+  merchant     Merchant    @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  settlement   Settlement? @relation(fields: [settlementId], references: [id], onDelete: SetNull)
+  ledgerEntries LedgerEntry[]
+
+  @@unique([merchantId, idempotencyKey])
+  @@map("payouts")
+}
+
+model Dispute {
+  id              String   @id @default(uuid()) @db.Uuid
+  merchantId      String   @map("merchant_id") @db.Uuid
+  chargeId        String   @map("charge_id") @db.Uuid
+  amount          BigInt
+  currency        String   @db.VarChar(3)
+  reason          String   @db.VarChar(100)
+  status          String   @db.VarChar(30)
+  evidence        Json?
+  sourceAccountId String   @map("source_account_id") @db.Uuid
+  dueAt           DateTime? @map("due_at") @db.Timestamptz(6)
+  resolvedAt      DateTime? @map("resolved_at") @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  merchant      Merchant      @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  charge        Charge        @relation(fields: [chargeId], references: [id])
+  sourceAccount LedgerAccount @relation(fields: [sourceAccountId], references: [id])
+  ledgerEntries LedgerEntry[]
+
+  @@map("disputes")
+}
+
+model ReconciliationRun {
+  id            String   @id @default(uuid()) @db.Uuid
+  merchantId    String   @map("merchant_id") @db.Uuid
+  processorCode String   @map("processor_code") @db.VarChar(50)
+  periodStart   DateTime @map("period_start") @db.Timestamptz(6)
+  periodEnd     DateTime @map("period_end") @db.Timestamptz(6)
+  status        String   @db.VarChar(30)
+  matchedCount  Int      @default(0) @map("matched_count")
+  mismatchCount Int      @default(0) @map("mismatch_count")
+  externalCount Int      @default(0) @map("external_count")
+  internalCount Int      @default(0) @map("internal_count")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  merchant Merchant             @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  items    ReconciliationItem[]
+
+  @@map("reconciliation_runs")
+}
+
+model ReconciliationItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  runId           String   @map("run_id") @db.Uuid
+  chargeId        String?  @map("charge_id") @db.Uuid
+  processorTxId   String?  @map("processor_tx_id") @db.VarChar(255)
+  result          String   @db.VarChar(40)
+  internalAmount  BigInt?  @map("internal_amount")
+  externalAmount  BigInt?  @map("external_amount")
+  internalStatus  String?  @map("internal_status") @db.VarChar(50)
+  externalStatus  String?  @map("external_status") @db.VarChar(50)
+  details         String?  @db.VarChar(500)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  run    ReconciliationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  charge Charge?           @relation(fields: [chargeId], references: [id], onDelete: SetNull)
+
+  @@map("reconciliation_items")
 }

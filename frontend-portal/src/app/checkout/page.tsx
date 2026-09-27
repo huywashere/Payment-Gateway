@@ -106,11 +106,39 @@ function CheckoutContent() {
       const data = await res.json();
       if (res.ok && data.status === 'SUCCEEDED') {
         setPaymentSuccess(true);
+      } else if (res.ok && data.status === 'REQUIRES_ACTION') {
+        const action = await fetch(`/api/gateway/v1/checkout/${encodeURIComponent(session)}/sandbox/action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ success: true }),
+        });
+        const actionResult = await action.json();
+        if (action.ok && actionResult.status === 'SUCCEEDED') setPaymentSuccess(true);
+        else setErrorMessage(actionResult.failureMessage || 'Xác thực sandbox thất bại');
       } else {
         setErrorMessage(data.failureMessage || data.error?.message || 'Giao dịch bị từ chối');
       }
     } catch (err) {
       setErrorMessage('Không kết nối được Spring Boot Core: ' + err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleVietQrComplete = async () => {
+    setIsProcessing(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetch(`/api/gateway/v1/checkout/${encodeURIComponent(session)}/sandbox/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentMethodType: 'VIETQR', scenario: 'success' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'SUCCEEDED') setPaymentSuccess(true);
+      else setErrorMessage(data.failureMessage || data.error?.message || 'Không thể hoàn tất VietQR sandbox');
+    } catch (err) {
+      setErrorMessage('Không kết nối được Gateway Core: ' + err);
     } finally {
       setIsProcessing(false);
     }
@@ -696,13 +724,7 @@ function CheckoutContent() {
                 <button
                   type="button"
                   id="btn-simulate-webhook"
-                  onClick={() => {
-                    setIsProcessing(true);
-                    setTimeout(() => {
-                      setIsProcessing(false);
-                      setPaymentSuccess(true);
-                    }, 1000);
-                  }}
+                  onClick={handleVietQrComplete}
                   className="btn-adyen-green"
                   style={{ width: '100%', padding: '15px', fontSize: '0.95rem' }}
                 >

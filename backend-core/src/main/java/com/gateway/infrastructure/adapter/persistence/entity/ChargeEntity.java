@@ -26,6 +26,9 @@ public class ChargeEntity {
     @Column(name = "merchant_id", nullable = false)
     private UUID merchantId;
 
+    @Column(name = "payment_method_id")
+    private UUID paymentMethodId;
+
     @Column(name = "amount", nullable = false)
     private Long amount;
 
