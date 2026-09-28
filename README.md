@@ -30,7 +30,7 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
 
 6. **Next.js BFF & Prisma ORM:**
    - Frontend Next.js 16 tích hợp **Prisma ORM** kết nối trực tiếp vào PostgreSQL để truy vấn số dư và giao dịch thời gian thực.
-   - Giao diện Dark Mode Isometric Clone chuẩn thiết kế `apipay.vn` với logo ngân hàng vector sắc nét (MB, ACB, BIDV, VCB, TPBank...) và trình giả lập VietQR Napas 24/7.
+   - Giao diện Dark Mode Isometric Clone chuẩn thiết kế `apipay.vn` với bộ logo thương hiệu ngân hàng gốc được lưu cục bộ (MB, ACB, BIDV, VCB, TPBank...) và trình giả lập VietQR Napas 24/7.
 
 7. **Merchant Platform & Sandbox Developer Experience:**
    - Onboarding merchant, scoped API key, rotate/revoke, audit log và quản lý webhook endpoint.
@@ -66,6 +66,11 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
    - Trang chi tiết Payment Link/giao dịch, empty/loading/error/toast dùng chung và soft reset sandbox giữ lịch sử tài chính.
    - JavaScript SDK bao phủ Payment Link, bank inbox, organization, acquirer và webhook nâng cao.
 
+13. **Merchant Operations & Go Edge:**
+   - Dashboard analytics tổng hợp server-side, SSE realtime, notification center có trạng thái đã đọc.
+   - Bank Hub, billing/invoice CSV, lịch sử subscription và audit log có lọc/export trong portal.
+   - Go edge nhận callback có HMAC + replay window, bounded queue, worker pool/retry, SSE fan-out và Prometheus metrics.
+
 ---
 
 ## 🛠 Tech Stack
@@ -79,6 +84,7 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
 | **Message Broker** | RabbitMQ 3.13 (AMQP + Management UI) |
 | **Containerization** | Docker & Docker Compose |
 | **Observability** | Prometheus + Grafana + Loki + Grafana Alloy + Alertmanager |
+| **High-throughput Edge** | Go 1.24 + bounded worker pool + SSE + Prometheus text metrics |
 | **CI/CD & Security** | GitHub Actions + CodeQL + Trivy + GHCR |
 
 ---
@@ -99,6 +105,7 @@ docker compose --env-file infra/environments/.env.dev -f infra/compose/compose.d
 - PostgreSQL: `localhost:5433`
 - Redis: `localhost:6379`
 - RabbitMQ Management: `http://localhost:15672`
+- Go Infra Gateway: `http://localhost:8090/readyz`
 
 Chi tiết cấu trúc container, mạng nội bộ và test dependencies nằm trong [`infra/README.md`](infra/README.md).
 
@@ -169,6 +176,7 @@ Money operations và hardening giai đoạn 9-10 nằm trong [`docs/stages-9-10.
 Phạm vi production simulation giai đoạn 11-15 nằm trong [`docs/stages-11-15.md`](docs/stages-11-15.md).
 VietQR, realtime matching, webhook SaaS, acquirer SPI và checklist External UAT nằm trong [`docs/stages-20-25.md`](docs/stages-20-25.md).
 Portal quản trị, SSE, mock alert, SDK và bộ test demo nằm trong [`docs/stage-26-demo-experience.md`](docs/stage-26-demo-experience.md).
+Dashboard analytics, Bank Hub, billing/audit và Go edge nằm trong [`docs/stage-27-merchant-operations.md`](docs/stage-27-merchant-operations.md).
 Ranh giới hardening và các blocker bên ngoài nằm trong [`docs/production-hardening.md`](docs/production-hardening.md).
 
 ---

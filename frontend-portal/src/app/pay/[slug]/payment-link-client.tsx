@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Check, CheckCircle2, Clock3, Copy, Landmark, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { BankLogo } from '@/components/BankLogos';
 import styles from './payment-link.module.css';
 
 type PaymentLink = {
@@ -103,7 +104,7 @@ export default function PaymentLinkClient({ slug }: { slug: string }) {
           </div>
           <p className={styles.hint}>Mở ứng dụng ngân hàng và quét mã. Trang sẽ tự cập nhật khi nhận được tiền.</p>
           <div className={styles.details}>
-            <CopyRow label="Ngân hàng" value={`${link.bankName} (${link.bankCode})`} copied={copied === 'bank'} onCopy={() => copy(link.bankCode, 'bank')} />
+            <BankCopyRow bankCode={link.bankCode} bankName={link.bankName} copied={copied === 'bank'} onCopy={() => copy(link.bankCode, 'bank')} />
             <CopyRow label="Số tài khoản" value={link.accountNumber} copied={copied === 'account'} onCopy={() => copy(link.accountNumber, 'account')} />
             <CopyRow label="Nội dung bắt buộc" value={link.paymentCode} accent copied={copied === 'code'} onCopy={() => copy(link.paymentCode, 'code')} />
           </div>
@@ -116,4 +117,8 @@ export default function PaymentLinkClient({ slug }: { slug: string }) {
 
 function CopyRow({ label, value, copied, accent, onCopy }: { label: string; value: string; copied: boolean; accent?: boolean; onCopy: () => void }) {
   return <button type="button" className={styles.copyRow} onClick={onCopy}><span><small>{label}</small><b className={accent ? styles.accent : ''}>{value}</b></span>{copied ? <Check size={18} /> : <Copy size={17} />}</button>;
+}
+
+function BankCopyRow({ bankCode, bankName, copied, onCopy }: { bankCode: string; bankName: string; copied: boolean; onCopy: () => void }) {
+  return <button type="button" className={styles.copyRow} onClick={onCopy}><span><small>Ngân hàng</small><span className={styles.bankIdentity}><BankLogo code={bankCode} size={25} /><b>{bankName}</b></span></span>{copied ? <Check size={18} /> : <Copy size={17} />}</button>;
 }

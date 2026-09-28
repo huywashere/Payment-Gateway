@@ -5,6 +5,9 @@ services:
   frontend:
     networks: [edge, app, data, observability]
 
+  infra-gateway:
+    networks: [edge, app, observability]
+
   prometheus:
     image: prom/prometheus:v3.12.0
     command:

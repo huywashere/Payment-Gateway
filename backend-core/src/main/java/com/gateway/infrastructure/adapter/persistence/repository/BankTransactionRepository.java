@@ -7,9 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.time.OffsetDateTime;
+import java.util.List;
 
 public interface BankTransactionRepository extends JpaRepository<BankTransactionEntity, UUID> {
     Optional<BankTransactionEntity> findByBankAccountIdAndExternalReference(UUID bankAccountId, String externalReference);
     Optional<BankTransactionEntity> findByIdAndMerchantId(UUID id, UUID merchantId);
     Page<BankTransactionEntity> findByMerchantIdOrderByReceivedAtDesc(UUID merchantId, Pageable pageable);
+    List<BankTransactionEntity> findByMerchantIdAndReceivedAtAfterOrderByReceivedAtAsc(UUID merchantId, OffsetDateTime after);
 }

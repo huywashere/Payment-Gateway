@@ -9,12 +9,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Service
 @RequiredArgsConstructor
 public class BankAccountService {
-    private static final Map<String, String> BINS = Map.of(
-            "ACB", "970416", "BIDV", "970418", "VIETINBANK", "970415", "NCB", "970419");
+    private static final Map<String, String> BINS = Map.ofEntries(
+            Map.entry("ACB", "970416"), Map.entry("BIDV", "970418"),
+            Map.entry("VIETINBANK", "970415"), Map.entry("ICB", "970415"),
+            Map.entry("NCB", "970419"), Map.entry("VCB", "970436"),
+            Map.entry("TCB", "970407"), Map.entry("MB", "970422"),
+            Map.entry("VPB", "970432"), Map.entry("TPB", "970423"),
+            Map.entry("VIB", "970441"), Map.entry("STB", "970403"),
+            Map.entry("OCB", "970448"), Map.entry("MSB", "970426"),
+            Map.entry("SHBVN", "970424"), Map.entry("COOPBANK", "970446"));
     private final BankAccountRepository repository;
     private final SubscriptionService subscriptionService;
     private final AuditService auditService;
@@ -59,6 +68,18 @@ public class BankAccountService {
         repository.save(entity);
         auditService.record(merchantId, "API_KEY", merchantId.toString(), "bank_account.disabled",
                 "bank_account", id.toString(), null);
+    }
+
+    @Transactional
+    public BankAccountResponse sync(UUID merchantId, UUID id) {
+        BankAccountEntity entity = owned(merchantId, id);
+        if ("DISABLED".equals(entity.getStatus())) throw new IllegalStateException("Disabled bank account cannot be synchronized");
+        entity.setStatus("ACTIVE");
+        entity.setLastSyncedAt(OffsetDateTime.now(ZoneOffset.UTC));
+        repository.save(entity);
+        auditService.record(merchantId, "API_KEY", merchantId.toString(), "bank_account.synced",
+                "bank_account", id.toString(), Map.of("bank_code", entity.getBankCode()));
+        return response(entity);
     }
 
     BankAccountEntity owned(UUID merchantId, UUID id) {

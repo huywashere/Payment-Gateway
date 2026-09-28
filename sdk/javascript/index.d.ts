@@ -35,6 +35,7 @@ export class GatewayServer {
   createBankAccount(params: Record<string, unknown>): Promise<Record<string, unknown>>;
   setDefaultBankAccount(id: string): Promise<Record<string, unknown>>;
   disableBankAccount(id: string): Promise<Record<string, unknown>>;
+  syncBankAccount(id: string): Promise<Record<string, unknown>>;
   listBankTransactions(options?: { limit?: number }): Promise<Record<string, unknown>[]>;
   getBankTransaction(id: string): Promise<Record<string, unknown>>;
   listOrganizationMembers(): Promise<Record<string, unknown>[]>;
@@ -55,6 +56,13 @@ export class GatewayServer {
   listWebhookDeliveries(options?: { limit?: number }): Promise<Record<string, unknown>[]>;
   replayWebhookDelivery(id: string): Promise<Record<string, unknown>>;
   listWebhookAlerts(): Promise<Record<string, unknown>[]>;
+  getDashboardOverview(options?: { days?: 7 | 30 | 90 }): Promise<Record<string, unknown>>;
+  listNotifications(options?: { limit?: number }): Promise<Record<string, unknown>>;
+  markNotificationRead(id: string): Promise<Record<string, unknown>>;
+  markAllNotificationsRead(): Promise<Record<string, unknown>>;
+  listBillingInvoices(): Promise<Record<string, unknown>[]>;
+  listSubscriptionEvents(): Promise<Record<string, unknown>[]>;
+  listAuditLogs(options?: { limit?: number; query?: string }): Promise<Record<string, unknown>[]>;
 }
 
 export class GatewaySandbox {

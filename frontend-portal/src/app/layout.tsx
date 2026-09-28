@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import './globals.css';
-import { AdyenFooter, AdyenHeader } from '@/components/AdyenChrome';
-import { PortalSessionBadge } from '@/components/PortalSessionBadge';
+import { SiteChrome } from '@/components/SiteChrome';
 
 export const metadata: Metadata = {
   title: 'ApiPay | Unified Payments & Financial Technology Platform',
@@ -12,12 +12,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="vi">
       <body>
-        <div className="site-shell">
-          <AdyenHeader />
-          <PortalSessionBadge />
-          <main>{children}</main>
-          <AdyenFooter />
-        </div>
+        <Suspense fallback={<main className="app-shell-fallback">{children}</main>}>
+          <SiteChrome>{children}</SiteChrome>
+        </Suspense>
       </body>
     </html>
   );

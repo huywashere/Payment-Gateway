@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, ArrowRight, Star, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { PortalToast } from '@/components/PortalFeedback';
 
 interface Product {
   id: string;
@@ -44,32 +45,29 @@ const PRODUCTS: Product[] = [
 export default function DemoStorePage() {
   const router = useRouter();
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; tone: 'error' } | null>(null);
 
   const handleBuyNow = async (product: Product) => {
     setPurchasingId(product.id);
     try {
-      const idempKey = `store_mercury_${crypto.randomUUID()}`;
-      const res = await fetch('/api/gateway/v1/payment_intents', {
+      setToast(null);
+      const res = await fetch('/api/store/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Idempotency-Key': idempKey,
         },
-        body: JSON.stringify({
-          amount: product.price,
-          currency: 'VND',
-          description: `Đơn hàng ${product.name}`,
-        }),
+        body: JSON.stringify({ productId: product.id }),
       });
 
       if (res.ok) {
         const data = await res.json();
         router.push(`/checkout?session=${data.clientSecret}`);
       } else {
-        alert('Lỗi tạo phiên thanh toán từ Gateway Core');
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error || `Không thể tạo phiên thanh toán (HTTP ${res.status}).`);
       }
     } catch (err) {
-      alert('Không thể kết nối dịch vụ thanh toán: ' + err);
+      setToast({ message: err instanceof Error ? err.message : 'Không thể kết nối dịch vụ thanh toán.', tone: 'error' });
     } finally {
       setPurchasingId(null);
     }
@@ -218,6 +216,7 @@ export default function DemoStorePage() {
           </div>
         ))}
       </div>
+      {toast && <PortalToast message={toast.message} tone={toast.tone} onClose={() => setToast(null)} />}
     </div>
   );
 }

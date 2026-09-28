@@ -7,6 +7,8 @@ import com.gateway.infrastructure.adapter.persistence.repository.PaymentIntentRe
 import com.gateway.infrastructure.adapter.persistence.repository.PlanRepository;
 import com.gateway.infrastructure.adapter.persistence.repository.BankAccountRepository;
 import com.gateway.infrastructure.adapter.persistence.repository.WebhookEndpointRepository;
+import com.gateway.infrastructure.adapter.persistence.entity.SubscriptionEventEntity;
+import com.gateway.infrastructure.adapter.persistence.repository.SubscriptionEventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,10 @@ public class SubscriptionService {
     private final PaymentIntentRepository paymentIntentRepository;
     private final BankAccountRepository bankAccountRepository;
     private final WebhookEndpointRepository webhookEndpointRepository;
+    private final SubscriptionEventRepository subscriptionEventRepository;
+    private final PortalNotificationService notificationService;
+    private final AuditService auditService;
+    private final BillingService billingService;
 
     @Transactional(readOnly = true)
     public void assertPaymentAllowed(UUID merchantId) {
@@ -74,9 +80,20 @@ public class SubscriptionService {
                 .orElseThrow(() -> new IllegalArgumentException("Unknown plan"));
         MerchantSubscriptionEntity subscription = subscriptionRepository.findById(merchantId)
                 .orElseThrow(() -> new IllegalStateException("Merchant subscription is missing"));
+        String previousPlan = subscription.getPlanCode();
+        if (previousPlan.equals(plan.getCode())) return summary(merchantId);
         subscription.setPlanCode(plan.getCode());
         subscription.setStatus("ACTIVE");
         subscriptionRepository.save(subscription);
+        subscriptionEventRepository.save(SubscriptionEventEntity.builder()
+                .merchantId(merchantId).previousPlan(previousPlan).newPlan(plan.getCode())
+                .reason("PORTAL_CHANGE").build());
+        billingService.issuePlanInvoice(merchantId, plan, subscription.getCurrentPeriodStart(), subscription.getCurrentPeriodEnd());
+        notificationService.create(merchantId, "PLAN_CHANGED", "SUCCESS", "Đã đổi gói dịch vụ",
+                "Gói " + previousPlan + " đã được chuyển sang " + plan.getDisplayName() + ".",
+                "subscription", merchantId.toString());
+        auditService.record(merchantId, "API_KEY", merchantId.toString(), "subscription.changed",
+                "subscription", merchantId.toString(), Map.of("previous_plan", previousPlan, "new_plan", plan.getCode()));
         return summary(merchantId);
     }
 

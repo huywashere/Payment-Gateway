@@ -8,10 +8,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import java.util.UUID;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public interface PaymentIntentRepository extends JpaRepository<PaymentIntentEntity, UUID> {
     Optional<PaymentIntentEntity> findByClientSecret(String clientSecret);
     Optional<PaymentIntentEntity> findByIdempotencyKeyAndMerchantId(String idempotencyKey, UUID merchantId);
     Page<PaymentIntentEntity> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId, Pageable pageable);
     long countByMerchantIdAndCreatedAtAfter(UUID merchantId, OffsetDateTime after);
+    List<PaymentIntentEntity> findByMerchantIdAndCreatedAtAfterOrderByCreatedAtAsc(UUID merchantId, OffsetDateTime after);
 }

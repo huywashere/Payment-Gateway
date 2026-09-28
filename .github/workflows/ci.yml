@@ -123,9 +123,34 @@ jobs:
           DATABASE_URL: postgresql://gateway_test:gateway_test_password@localhost:55433/payment_gateway_test
         run: npm run build
 
+      - name: Test JavaScript SDK
+        working-directory: sdk/javascript
+        run: npm test
+
+  infra-gateway:
+    name: Go edge quality gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.24.x"
+          cache-dependency-path: services/infra-gateway/go.mod
+
+      - name: Test race safety
+        working-directory: services/infra-gateway
+        run: go test -race ./...
+
+      - name: Vet
+        working-directory: services/infra-gateway
+        run: go vet ./...
+
   image-security:
     name: Build and scan ${{ matrix.name }}
-    needs: [validate-infrastructure, backend, frontend]
+    needs: [validate-infrastructure, backend, frontend, infra-gateway]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -138,6 +163,8 @@ jobs:
             dockerfile: infra/docker/backend.Dockerfile
           - name: frontend-portal
             dockerfile: infra/docker/frontend.Dockerfile
+          - name: infra-gateway
+            dockerfile: infra/docker/infra-gateway.Dockerfile
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -224,6 +251,8 @@ jobs:
             dockerfile: infra/docker/backend.Dockerfile
           - name: frontend-portal
             dockerfile: infra/docker/frontend.Dockerfile
+          - name: infra-gateway
+            dockerfile: infra/docker/infra-gateway.Dockerfile
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

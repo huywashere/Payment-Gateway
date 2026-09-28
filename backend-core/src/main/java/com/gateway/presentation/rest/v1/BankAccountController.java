@@ -34,6 +34,11 @@ public class BankAccountController {
         return service.makeDefault((UUID) authentication.getPrincipal(), id);
     }
 
+    @PostMapping("/{id}/sync")
+    public BankAccountResponse sync(Authentication authentication, @PathVariable UUID id) {
+        return service.sync((UUID) authentication.getPrincipal(), id);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void disable(Authentication authentication, @PathVariable UUID id) {

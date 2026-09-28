@@ -3,7 +3,8 @@ import { PORTAL_SESSION_COOKIE, roleCanAccess, verifyPortalSession } from '@/lib
 
 function requiredArea(pathname: string) {
   if (pathname.startsWith('/developers') || pathname.startsWith('/acquirer')) return 'developer' as const;
-  if (pathname.startsWith('/operations') || pathname.startsWith('/payment-links')) return 'finance' as const;
+  if (pathname.startsWith('/operations') || pathname.startsWith('/payment-links') || pathname.startsWith('/transactions') || pathname.startsWith('/banks') || pathname.startsWith('/billing')) return 'finance' as const;
+  if (pathname.startsWith('/audit-logs')) return 'audit' as const;
   return 'dashboard' as const;
 }
 
@@ -27,12 +28,12 @@ export async function proxy(request: NextRequest) {
   if (!pathname.startsWith('/api/') && !roleCanAccess(session.role, requiredArea(pathname))) {
     return NextResponse.redirect(new URL('/dashboard?error=forbidden', request.url));
   }
-  if (pathname.startsWith('/platform') && session.role !== 'OWNER') {
+  if ((pathname.startsWith('/platform') || pathname.startsWith('/organization')) && session.role !== 'OWNER') {
     return NextResponse.redirect(new URL('/dashboard?error=owner_required', request.url));
   }
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/login', '/dashboard/:path*', '/developers/:path*', '/operations/:path*', '/payment-links/:path*', '/organization/:path*', '/acquirer/:path*', '/platform/:path*', '/api/gateway/:path*'],
+  matcher: ['/login', '/dashboard/:path*', '/developers/:path*', '/operations/:path*', '/payment-links/:path*', '/transactions/:path*', '/organization/:path*', '/acquirer/:path*', '/platform/:path*', '/banks/:path*', '/billing/:path*', '/audit-logs/:path*', '/api/gateway/:path*', '/api/prisma/:path*'],
 };

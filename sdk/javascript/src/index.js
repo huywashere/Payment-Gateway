@@ -105,6 +105,7 @@ export class GatewayServer extends BaseClient {
   createBankAccount(params) { return this.request('/v1/bank_accounts', { method: 'POST', body: params }); }
   setDefaultBankAccount(id) { return this.request(`/v1/bank_accounts/${encodeURIComponent(id)}/default`, { method: 'POST' }); }
   disableBankAccount(id) { return this.request(`/v1/bank_accounts/${encodeURIComponent(id)}`, { method: 'DELETE' }); }
+  syncBankAccount(id) { return this.request(`/v1/bank_accounts/${encodeURIComponent(id)}/sync`, { method: 'POST' }); }
   listBankTransactions({ limit = 50 } = {}) { return this.request(`/v1/bank_transactions?limit=${limit}`); }
   getBankTransaction(id) { return this.request(`/v1/bank_transactions/${encodeURIComponent(id)}`); }
   listOrganizationMembers() { return this.request('/v1/organization/members'); }
@@ -125,6 +126,13 @@ export class GatewayServer extends BaseClient {
   listWebhookDeliveries({ limit = 25 } = {}) { return this.request(`/v1/webhooks/deliveries?limit=${limit}`); }
   replayWebhookDelivery(id) { return this.request(`/v1/webhooks/deliveries/${encodeURIComponent(id)}/replay`, { method: 'POST' }); }
   listWebhookAlerts() { return this.request('/v1/webhooks/alerts'); }
+  getDashboardOverview({ days = 30 } = {}) { return this.request(`/v1/dashboard/overview?days=${days}`); }
+  listNotifications({ limit = 20 } = {}) { return this.request(`/v1/notifications?limit=${limit}`); }
+  markNotificationRead(id) { return this.request(`/v1/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' }); }
+  markAllNotificationsRead() { return this.request('/v1/notifications/read-all', { method: 'POST' }); }
+  listBillingInvoices() { return this.request('/v1/billing/invoices'); }
+  listSubscriptionEvents() { return this.request('/v1/billing/subscription-events'); }
+  listAuditLogs({ limit = 50, query = '' } = {}) { return this.request(`/v1/audit_logs?limit=${limit}&query=${encodeURIComponent(query)}`); }
 }
 
 export class GatewaySandbox extends BaseClient {

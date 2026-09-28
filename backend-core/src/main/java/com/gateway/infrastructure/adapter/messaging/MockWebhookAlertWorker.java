@@ -1,6 +1,7 @@
 package com.gateway.infrastructure.adapter.messaging;
 
 import com.gateway.infrastructure.adapter.persistence.repository.WebhookAlertRepository;
+import com.gateway.application.service.PortalNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,6 +17,7 @@ import java.time.OffsetDateTime;
 @ConditionalOnProperty(name = "gateway.webhooks.alert-provider", havingValue = "mock", matchIfMissing = true)
 public class MockWebhookAlertWorker {
     private final WebhookAlertRepository repository;
+    private final PortalNotificationService notificationService;
 
     @Scheduled(fixedDelayString = "${gateway.webhooks.alert-poll-interval-ms:3000}")
     @Transactional
@@ -26,6 +28,9 @@ public class MockWebhookAlertWorker {
             alert.setStatus("SENT");
             alert.setSentAt(OffsetDateTime.now());
             repository.save(alert);
+            notificationService.create(alert.getMerchantId(), "WEBHOOK_ALERT", "WARNING",
+                    "Cảnh báo webhook đã được gửi", alert.getMessage(),
+                    "webhook_endpoint", alert.getEndpointId().toString());
         }
     }
 

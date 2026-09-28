@@ -30,6 +30,8 @@
 .copyRow small { color:#718096; font-size:.65rem; }
 .copyRow b { font-size:.83rem; }
 .copyRow svg,.accent { color:#009b52; }
+.bankIdentity { display:flex!important; align-items:center; gap:9px; margin-top:3px; }
+.bankIdentity b { color:#00112c; }
 .waiting { display:flex; align-items:center; gap:12px; margin-top:18px; padding:12px 14px; border-radius:10px; background:#f0faf5; }
 .waiting > span { width:18px; height:18px; border:2px solid #b9ead1; border-top-color:#00ad5d; border-radius:50%; animation:spin .9s linear infinite; }
 .waiting p { display:grid; }

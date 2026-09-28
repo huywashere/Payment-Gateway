@@ -148,6 +148,31 @@ services:
     restart: unless-stopped
     networks: [edge, app, data]
 
+  infra-gateway:
+    build:
+      context: ../..
+      dockerfile: infra/docker/infra-gateway.Dockerfile
+    image: payment-gateway/infra-gateway:dev
+    environment:
+      INFRA_GATEWAY_ADDR: :8090
+      GATEWAY_CORE_URL: http://backend:8080
+      GATEWAY_CORE_SECRET_KEY: ${GATEWAY_SANDBOX_SECRET_KEY:-sk_test_demo_gateway_key_999}
+      INFRA_INGEST_SECRET: ${INFRA_INGEST_SECRET:-sandbox-infra-ingest-secret}
+      INFRA_WORKERS: ${INFRA_WORKERS:-8}
+      INFRA_QUEUE_SIZE: ${INFRA_QUEUE_SIZE:-2048}
+    ports:
+      - "${HOST_BIND_ADDRESS:-127.0.0.1}:${INFRA_GATEWAY_HOST_PORT:-8090}:8090"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/infra-gateway-healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks: [edge, app]
+
 networks:
   edge:
   app:
