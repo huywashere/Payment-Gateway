@@ -3,11 +3,30 @@ package com.gateway.infrastructure.adapter.processor;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
+import java.util.Map;
+
 public interface BankProcessor {
     BankProcessResponse processPayment(BankProcessRequest request);
 
     default String processorCode(String paymentMethodType) {
         return "MOCK_" + paymentMethodType;
+    }
+
+    default String processorCode(String paymentMethodType, String bankCode) {
+        return processorCode(paymentMethodType);
+    }
+
+    default String resolveBankCode(String bankCode) {
+        return bankCode;
+    }
+
+    default String bankCodeFromTransactionId(String processorTransactionId) {
+        return null;
+    }
+
+    default List<Map<String, Object>> availableBanks() {
+        return List.of();
     }
 
     default BankReversalResponse reversePayment(BankReversalRequest request) {
@@ -29,6 +48,7 @@ public interface BankProcessor {
         private Integer expYear;
         private String cvv;
         private String paymentMethodType;
+        private String bankCode;
         private String scenario;
         private Long amount;
         private String currency;
@@ -51,6 +71,7 @@ public interface BankProcessor {
     class BankReversalRequest {
         private String operationId;
         private String processorTransactionId;
+        private String bankCode;
         private Long amount;
         private String currency;
         private String reason;

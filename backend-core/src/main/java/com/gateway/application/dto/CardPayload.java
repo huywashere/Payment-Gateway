@@ -15,4 +15,5 @@ public class CardPayload {
     private Integer expMonth;
     private Integer expYear;
     private String cvc;
+    private String bankCode;
 }

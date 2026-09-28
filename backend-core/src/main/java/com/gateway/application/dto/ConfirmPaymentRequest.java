@@ -14,5 +14,6 @@ public class ConfirmPaymentRequest {
     private CardPayload card;
     private String returnUrl;
     private String paymentMethodType;
+    private String bankCode;
     private String scenario;
 }

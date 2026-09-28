@@ -187,6 +187,20 @@ export function BankLogo({ code, size = 24 }: BankLogoProps) {
         </div>
       );
 
+    case 'NCB':
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect width="32" height="32" rx="6" fill="#6F2C91" />
+            <path d="M8 23V9L16 18V9L24 23" stroke="#FFFFFF" strokeWidth="3" strokeLinejoin="round" />
+            <path d="M8 25H24" stroke="#F4B41A" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <span style={{ fontWeight: 900, fontSize: '0.85rem', color: '#6F2C91' }}>
+            NCB
+          </span>
+        </div>
+      );
+
     case 'OCB':
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

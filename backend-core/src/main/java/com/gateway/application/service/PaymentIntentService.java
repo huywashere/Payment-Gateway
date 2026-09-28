@@ -36,6 +36,7 @@ public class PaymentIntentService {
     private final IdempotencyManager idempotencyManager;
     private final ObjectMapper objectMapper;
     private final RiskService riskService;
+    private final SubscriptionService subscriptionService;
     private final MeterRegistry meterRegistry;
 
     @Value("${gateway.mode:sandbox}")
@@ -62,6 +63,7 @@ public class PaymentIntentService {
                 return mapToResponse(existing, null, existing.getLastErrorCode(), null);
             }
         }
+        subscriptionService.assertPaymentAllowed(merchantId);
         String clientSecret = "pi_" + randomToken(24) + "_secret_" + randomToken(18);
         UUID customerId = createCustomerIfPresent(merchantId, request);
         PaymentIntentEntity saved = paymentIntentRepository.save(PaymentIntentEntity.builder()
@@ -117,9 +119,11 @@ public class PaymentIntentService {
         intent.setLastErrorCode(null);
 
         PaymentMaterial material = preparePaymentMethod(intent, request);
+        String bankCode = bankProcessor.resolveBankCode(request.getBankCode());
         BankProcessor.BankProcessResponse result = bankProcessor.processPayment(
                 BankProcessor.BankProcessRequest.builder()
                         .operationId(intent.getId().toString())
+                        .bankCode(bankCode)
                         .processorPaymentMethodToken(material.processorToken())
                         .rawCardNumber(material.rawCardNumber()).cardHolderName(material.holderName())
                         .expMonth(material.expMonth()).expYear(material.expYear()).cvv(material.cvc())
@@ -132,7 +136,7 @@ public class PaymentIntentService {
         ChargeEntity charge = null;
         if (result.isSuccess()) {
             meterRegistry.counter("gateway_payment_outcomes_total", "outcome", "succeeded").increment();
-            charge = captureSuccessfulPayment(intent, material.paymentMethod(), result.getProcessorTransactionId(), material.type());
+            charge = captureSuccessfulPayment(intent, material.paymentMethod(), result.getProcessorTransactionId(), material.type(), bankCode);
         } else if (result.isRequiresAction()) {
             meterRegistry.counter("gateway_payment_outcomes_total", "outcome", "requires_action").increment();
             intent.setStatus(PaymentIntentStatus.REQUIRES_ACTION);
@@ -142,7 +146,7 @@ public class PaymentIntentService {
                     .paymentMethodId(material.paymentMethod() == null ? null : material.paymentMethod().getId())
                     .amount(intent.getAmount()).feeAmount(ledgerService.calculateFee(intent.getAmount()))
                     .currency(intent.getCurrency()).processorTxId(result.getProcessorTransactionId())
-                    .processorCode(bankProcessor.processorCode(material.type())).status("PENDING").build());
+                    .processorCode(bankProcessor.processorCode(material.type(), bankCode)).status("PENDING").build());
             outboxService.enqueue(merchantId, "PAYMENT_INTENT", intent.getId(), "payment_intent.requires_action",
                     paymentEventData(intent));
         } else {
@@ -154,7 +158,7 @@ public class PaymentIntentService {
                     .paymentIntentId(intent.getId()).merchantId(merchantId)
                     .paymentMethodId(material.paymentMethod() == null ? null : material.paymentMethod().getId())
                     .amount(intent.getAmount()).currency(intent.getCurrency())
-                    .processorCode(bankProcessor.processorCode(material.type()))
+                    .processorCode(bankProcessor.processorCode(material.type(), bankCode))
                     .status("FAILED").failureMessage(failureMessage).build());
             outboxService.enqueue(merchantId, "PAYMENT_INTENT", intent.getId(), "payment_intent.payment_failed",
                     paymentEventData(intent));
@@ -183,8 +187,13 @@ public class PaymentIntentService {
         }
         PaymentMethodEntity method = intent.getPaymentMethodId() == null ? null
                 : paymentMethodRepository.findById(intent.getPaymentMethodId()).orElse(null);
+        String bankCode = chargeRepository.findByPaymentIntentId(intent.getId()).stream()
+                .filter(candidate -> "PENDING".equals(candidate.getStatus()))
+                .map(ChargeEntity::getProcessorTxId)
+                .map(bankProcessor::bankCodeFromTransactionId)
+                .filter(Objects::nonNull).findFirst().orElse(null);
         ChargeEntity charge = captureSuccessfulPayment(intent, method,
-                "bank_3ds_" + randomToken(16), "CARD");
+                "bank_3ds_" + randomToken(16), "CARD", bankCode);
         paymentIntentRepository.save(intent);
         return mapToResponse(intent, null, null, null, charge.getId());
     }
@@ -208,12 +217,27 @@ public class PaymentIntentService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid client secret"));
         ConfirmPaymentRequest confirm = ConfirmPaymentRequest.builder()
                 .paymentMethodType(request.getPaymentMethodType().toUpperCase(Locale.ROOT))
-                .scenario(request.getScenario()).returnUrl(request.getReturnUrl()).build();
+                .bankCode(request.getBankCode()).scenario(request.getScenario())
+                .returnUrl(request.getReturnUrl()).build();
         return confirmPaymentIntent(intent.getMerchantId(), intent.getId(), null, confirm);
     }
 
+    @Transactional
+    public UUID settleFromBankTransfer(UUID paymentIntentId, String bankReference, String bankCode) {
+        PaymentIntentEntity intent = paymentIntentRepository.findById(paymentIntentId)
+                .orElseThrow(() -> new IllegalArgumentException("PaymentIntent not found: " + paymentIntentId));
+        if (intent.getStatus() == PaymentIntentStatus.SUCCEEDED) return latestChargeId(intent.getId());
+        if (intent.getStatus().isTerminal()) throw new IllegalStateException("PaymentIntent cannot be settled: " + intent.getStatus());
+        intent.setStatus(PaymentIntentStatus.PROCESSING);
+        ChargeEntity charge = captureSuccessfulPayment(intent, null, bankReference, "VIETQR", bankCode);
+        paymentIntentRepository.save(intent);
+        auditService.record(intent.getMerchantId(), "BANK_CALLBACK", bankCode, "payment_intent.bank_settled",
+                "payment_intent", intent.getId().toString(), Map.of("bank_reference", bankReference));
+        return charge.getId();
+    }
+
     private ChargeEntity captureSuccessfulPayment(PaymentIntentEntity intent, PaymentMethodEntity paymentMethod,
-                                                  String processorTransactionId, String methodType) {
+                                                  String processorTransactionId, String methodType, String bankCode) {
         intent.setStatus(PaymentIntentStatus.SUCCEEDED);
         long fee = ledgerService.calculateFee(intent.getAmount());
         ChargeEntity charge = chargeRepository.findByPaymentIntentId(intent.getId()).stream()
@@ -225,7 +249,7 @@ public class PaymentIntentService {
         charge.setFeeAmount(fee);
         charge.setCurrency(intent.getCurrency());
         if (charge.getProcessorTxId() == null) charge.setProcessorTxId(processorTransactionId);
-        charge.setProcessorCode(bankProcessor.processorCode(methodType));
+        charge.setProcessorCode(bankProcessor.processorCode(methodType, bankCode));
         charge.setStatus("SUCCEEDED");
         charge = chargeRepository.save(charge);
         ledgerService.recordPaymentSucceeded(charge);

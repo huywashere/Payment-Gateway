@@ -6,9 +6,10 @@ import com.gateway.infrastructure.adapter.persistence.entity.ChargeEntity;
 import com.gateway.infrastructure.adapter.persistence.entity.PaymentIntentEntity;
 import com.gateway.infrastructure.adapter.persistence.repository.ChargeRepository;
 import com.gateway.infrastructure.adapter.persistence.repository.PaymentIntentRepository;
+import com.gateway.infrastructure.adapter.processor.BankSandboxProperties;
+import com.gateway.infrastructure.adapter.processor.SandboxBank;
 import com.gateway.infrastructure.adapter.security.HmacSigner;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,13 +30,19 @@ public class BankSandboxCallbackService {
     private final PaymentIntentRepository paymentIntentRepository;
     private final LedgerService ledgerService;
     private final OutboxService outboxService;
-
-    @Value("${gateway.processor.sandbox-callback-secret}")
-    private String callbackSecret;
+    private final BankSandboxProperties properties;
 
     @Transactional
     public Map<String, Object> accept(BankSandboxCallbackRequest request,
                                       String rawPayload, String signature) {
+        return accept(request.getBankCode(), request, rawPayload, signature);
+    }
+
+    @Transactional
+    public Map<String, Object> accept(String pathBankCode, BankSandboxCallbackRequest request,
+                                      String rawPayload, String signature) {
+        SandboxBank bank = resolveBank(pathBankCode, request);
+        String callbackSecret = properties.credentials(bank).callbackSecret();
         if (signature == null || !signer.verifySignature(rawPayload, signature, callbackSecret, 300)) {
             throw new IllegalArgumentException("Invalid or expired sandbox bank callback signature");
         }
@@ -64,6 +71,13 @@ public class BankSandboxCallbackService {
         if (charge == null) {
             mark(request.getEventId(), "UNMATCHED");
             return response(request, false, "unmatched");
+        }
+        boolean legacyCharge = request.getProcessorTransactionId().startsWith("sbank_txn_")
+                && charge.getProcessorCode() != null
+                && charge.getProcessorCode().startsWith("BANK_SANDBOX_");
+        if (!legacyCharge && (charge.getProcessorCode() == null
+                || !charge.getProcessorCode().startsWith(bank.name() + "_SANDBOX_"))) {
+            throw new IllegalArgumentException("Callback bank does not match the charge processor");
         }
         if (!charge.getAmount().equals(request.getAmount())
                 || !charge.getCurrency().equalsIgnoreCase(request.getCurrency())) {
@@ -108,8 +122,21 @@ public class BankSandboxCallbackService {
                 "duplicate", duplicate,
                 "outcome", outcome,
                 "event_id", request.getEventId(),
-                "processor_transaction_id", request.getProcessorTransactionId()
+                "processor_transaction_id", request.getProcessorTransactionId(),
+                "bank_code", resolveBank(request.getBankCode(), request).name()
         );
+    }
+
+    private SandboxBank resolveBank(String explicitBankCode, BankSandboxCallbackRequest request) {
+        SandboxBank inferred = SandboxBank.fromTransactionId(request.getProcessorTransactionId());
+        SandboxBank explicit = explicitBankCode == null || explicitBankCode.isBlank()
+                ? null : SandboxBank.fromCode(explicitBankCode);
+        if (explicit != null && inferred != null && explicit != inferred) {
+            throw new IllegalArgumentException("Callback bank does not match the transaction reference");
+        }
+        if (explicit != null) return explicit;
+        if (inferred != null) return inferred;
+        return SandboxBank.fromCode(properties.getDefaultBank());
     }
 
     private String sha256(String value) {

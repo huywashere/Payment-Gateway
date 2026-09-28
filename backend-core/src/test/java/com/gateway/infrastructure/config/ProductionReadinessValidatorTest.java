@@ -3,6 +3,7 @@ package com.gateway.infrastructure.config;
 import com.gateway.infrastructure.adapter.persistence.repository.MerchantRepository;
 import com.gateway.infrastructure.adapter.processor.LivePayoutProcessorPlaceholder;
 import com.gateway.infrastructure.adapter.processor.LiveProcessorPlaceholder;
+import com.gateway.infrastructure.adapter.processor.LiveAcquirerPlaceholder;
 import com.gateway.infrastructure.adapter.security.KmsVaultServicePlaceholder;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.DefaultApplicationArguments;
@@ -17,6 +18,7 @@ class ProductionReadinessValidatorTest {
         MockEnvironment environment = new MockEnvironment()
                 .withProperty("gateway.mode", "live")
                 .withProperty("gateway.processor.mode", "live")
+                .withProperty("gateway.acquirer.mode", "live")
                 .withProperty("gateway.security.platform-auth-mode", "oidc")
                 .withProperty("gateway.security.vault-provider", "kms")
                 .withProperty("gateway.production.external-controls-attested", "true")
@@ -27,7 +29,7 @@ class ProductionReadinessValidatorTest {
                 .withProperty("spring.rabbitmq.ssl.enabled", "true");
         ProductionReadinessValidator validator = new ProductionReadinessValidator(
                 environment, new LiveProcessorPlaceholder(), new LivePayoutProcessorPlaceholder(),
-                new KmsVaultServicePlaceholder(), mock(MerchantRepository.class));
+                new KmsVaultServicePlaceholder(), new LiveAcquirerPlaceholder(), mock(MerchantRepository.class));
 
         assertThatThrownBy(() -> validator.run(new DefaultApplicationArguments()))
                 .isInstanceOf(IllegalStateException.class)

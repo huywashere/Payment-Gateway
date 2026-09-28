@@ -17,6 +17,14 @@ public class WebhookEndpointResponse {
     private Set<String> subscribedEvents;
     private String status;
     private String signingSecret;
+    private String authType;
+    private Set<String> bankCodes;
+    private Set<String> accountIds;
+    private Set<String> directions;
+    private Set<String> paymentCodePrefixes;
+    private Integer consecutiveFailures;
+    private String alertChannel;
+    private String alertDestination;
+    private OffsetDateTime previousSecretValidUntil;
     private OffsetDateTime createdAt;
 }
-

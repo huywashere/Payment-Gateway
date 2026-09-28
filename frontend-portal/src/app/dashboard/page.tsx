@@ -20,6 +20,9 @@ import {
   CreditCard,
   KeyRound,
   Landmark,
+  QrCode,
+  Users,
+  Layers3,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BankLogo } from '@/components/BankLogos';
@@ -63,7 +66,7 @@ export default function DashboardPage() {
         setBalance(data.available_balance);
       }
     } catch (err) {
-      console.error('Error fetching balance from Spring Boot', err);
+      console.error('Không thể tải số dư', err);
     } finally {
       setLoading(false);
     }
@@ -122,7 +125,7 @@ export default function DashboardPage() {
         alert('Lỗi tạo PaymentIntent từ Core Engine');
       }
     } catch (err) {
-      alert('Không kết nối được Spring Boot Core: ' + err);
+      alert('Không thể kết nối dịch vụ thanh toán: ' + err);
     } finally {
       setCreating(false);
     }
@@ -150,11 +153,11 @@ export default function DashboardPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
           <span className="adyen-pulse-dot" />
-          <span>Spring Boot Core :8080</span>
+          <span>Sandbox đang hoạt động</span>
           <span>•</span>
-          <span style={{ color: 'var(--mercury-gold)' }}>PostgreSQL 16 :5433</span>
+          <span style={{ color: 'var(--mercury-gold)' }}>Đối soát tự động</span>
           <span>•</span>
-          <span style={{ color: 'var(--adyen-green-neon)' }}>RabbitMQ :5672</span>
+          <span style={{ color: 'var(--adyen-green-neon)' }}>Webhook sẵn sàng</span>
         </div>
       </div>
 
@@ -180,7 +183,7 @@ export default function DashboardPage() {
                 color: 'var(--text-primary)',
               }}
             >
-              Mercury Treasury & Sổ Cái
+              Tổng quan thanh toán
             </h1>
             <span
               style={{
@@ -197,16 +200,28 @@ export default function DashboardPage() {
             </span>
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginTop: '6px' }}>
-            Tài khoản thụ hưởng: <strong>TechStore Vietnam</strong> • Ngân hàng liên kết: ACB, MB, Vietcombank
+            Theo dõi dòng tiền, Payment Link, đối soát và hoạt động của tài khoản doanh nghiệp.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <Link href="/payment-links" className="btn-adyen-green" style={{ padding: '9px 18px', fontSize: '0.85rem' }}>
+            <QrCode size={15} /> Payment links
+          </Link>
           <Link href="/developers" className="btn-glass" style={{ padding: '9px 18px', fontSize: '0.85rem' }}>
-            <KeyRound size={15} /> Developer settings
+            <KeyRound size={15} /> API & Webhook
+          </Link>
+          <Link href="/organization" className="btn-glass" style={{ padding: '9px 18px', fontSize: '0.85rem' }}>
+            <Users size={15} /> Tổ chức
+          </Link>
+          <Link href="/acquirer" className="btn-glass" style={{ padding: '9px 18px', fontSize: '0.85rem' }}>
+            <CreditCard size={15} /> Acquirer
+          </Link>
+          <Link href="/platform" className="btn-glass" style={{ padding: '9px 18px', fontSize: '0.85rem' }}>
+            <Layers3 size={15} /> Platform
           </Link>
           <Link href="/operations" className="btn-glass" style={{ padding: '9px 18px', fontSize: '0.85rem' }}>
-            <Landmark size={15} /> Money operations
+            <Landmark size={15} /> Vận hành tiền
           </Link>
           <button
             id="btn-refresh-balance"
@@ -394,7 +409,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            AES-256-GCM
+            Bảo vệ nhiều lớp
           </div>
           <div style={{ marginTop: '10px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>
             Chuẩn bảo mật ngân hàng quốc tế
@@ -431,7 +446,7 @@ export default function DashboardPage() {
                 borderRadius: '999px',
               }}
             >
-              PostgreSQL Connected
+              Dịch vụ đang hoạt động
             </span>
           </div>
 
@@ -487,7 +502,7 @@ export default function DashboardPage() {
               Khóa API & Môi trường Sandbox (Developer Keys)
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginTop: '4px' }}>
-              Sử dụng các khóa này để gửi request xác thực với Backend Spring Boot Core.
+              Sử dụng các khóa này để xác thực yêu cầu từ ứng dụng của bạn.
             </p>
           </div>
 
@@ -692,7 +707,7 @@ export default function DashboardPage() {
               Giao Dịch Biến Động Gần Đây (Transactions)
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginTop: '4px' }}>
-              Đồng bộ dữ liệu thời gian thực từ Spring Boot Engine & PostgreSQL.
+              Dữ liệu giao dịch được đồng bộ và cập nhật tự động.
             </p>
           </div>
         </div>

@@ -55,6 +55,7 @@ public class CheckoutController {
 
         ConfirmPaymentRequest request = ConfirmPaymentRequest.builder()
                 .card(cardPayload)
+                .bankCode(cardPayload.getBankCode())
                 .build();
 
         PaymentIntentResponse response = paymentIntentService.confirmPaymentIntent(intent.getId(), request);

@@ -26,6 +26,34 @@ public class WebhookEndpointEntity {
     private String description;
     @Column(name = "signing_secret", nullable = false)
     private String signingSecret;
+    @Column(name = "auth_type", nullable = false, length = 30)
+    @Builder.Default
+    private String authType = "HMAC_SHA256";
+    @Column(name = "auth_config_encrypted", columnDefinition = "TEXT")
+    private String authConfigEncrypted;
+    @Column(name = "previous_signing_secret")
+    private String previousSigningSecret;
+    @Column(name = "previous_secret_valid_until")
+    private OffsetDateTime previousSecretValidUntil;
+    @Column(name = "bank_code_filter", nullable = false, columnDefinition = "TEXT")
+    @Builder.Default
+    private String bankCodeFilter = "*";
+    @Column(name = "account_id_filter", nullable = false, columnDefinition = "TEXT")
+    @Builder.Default
+    private String accountIdFilter = "*";
+    @Column(name = "direction_filter", nullable = false, columnDefinition = "TEXT")
+    @Builder.Default
+    private String directionFilter = "*";
+    @Column(name = "payment_code_prefix_filter", nullable = false, columnDefinition = "TEXT")
+    @Builder.Default
+    private String paymentCodePrefixFilter = "*";
+    @Column(name = "consecutive_failures", nullable = false)
+    @Builder.Default
+    private Integer consecutiveFailures = 0;
+    @Column(name = "alert_channel", length = 30)
+    private String alertChannel;
+    @Column(name = "alert_destination", length = 500)
+    private String alertDestination;
     @Column(name = "subscribed_events", nullable = false)
     @Builder.Default
     private String subscribedEvents = "*";
@@ -39,4 +67,3 @@ public class WebhookEndpointEntity {
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 }
-

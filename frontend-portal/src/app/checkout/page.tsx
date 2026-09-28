@@ -100,6 +100,7 @@ function CheckoutContent() {
           expMonth: expM,
           expYear: expY,
           cvc: cvc,
+          bankCode: selectedBank,
         }),
       });
 
@@ -119,7 +120,7 @@ function CheckoutContent() {
         setErrorMessage(data.failureMessage || data.error?.message || 'Giao dịch bị từ chối');
       }
     } catch (err) {
-      setErrorMessage('Không kết nối được Spring Boot Core: ' + err);
+      setErrorMessage('Không thể kết nối dịch vụ thanh toán: ' + err);
     } finally {
       setIsProcessing(false);
     }
@@ -132,7 +133,7 @@ function CheckoutContent() {
       const res = await fetch(`/api/gateway/v1/checkout/${encodeURIComponent(session)}/sandbox/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentMethodType: 'VIETQR', scenario: 'success' }),
+        body: JSON.stringify({ paymentMethodType: 'VIETQR', bankCode: selectedBank, scenario: 'success' }),
       });
       const data = await res.json();
       if (res.ok && data.status === 'SUCCEEDED') setPaymentSuccess(true);
@@ -200,7 +201,7 @@ function CheckoutContent() {
             Thanh Toán Thành Công!
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '32px' }}>
-            Giao dịch đã được hạch toán an toàn vào Sổ Cái Kép và sinh sự kiện Outbox qua RabbitMQ.
+            Giao dịch đã được xác nhận và ghi nhận an toàn. Bạn có thể đóng trang này.
           </p>
 
           <div
@@ -223,6 +224,10 @@ function CheckoutContent() {
               <span style={{ fontWeight: 600, color: '#f5f5f7' }}>
                 {paymentMethod === 'card' ? 'Thẻ Quốc tế (Mã hóa PCI Vault)' : 'VietQR Napas 24/7'}
               </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>Ngân hàng xử lý:</span>
+              <span style={{ fontWeight: 700, color: '#f5f5f7' }}>{selectedBank} Sandbox</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-dim)' }}>Hạch toán Sổ cái:</span>
@@ -255,7 +260,7 @@ function CheckoutContent() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--adyen-green-neon)', fontSize: '0.8rem', fontWeight: 700, marginBottom: '20px' }}>
               <ShieldCheck size={16} />
-              <span>ADYEN UNIFIED COMMERCE SECURED</span>
+              <span>APIPAY SECURE CHECKOUT</span>
             </div>
 
             <span style={{ fontSize: '0.86rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
@@ -285,7 +290,7 @@ function CheckoutContent() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                 <span style={{ color: 'var(--text-dim)' }}>Tiêu chuẩn</span>
-                <span style={{ fontWeight: 600, color: 'var(--mercury-gold)' }}>PCI-DSS Level 1 & AES-256</span>
+                <span style={{ fontWeight: 600, color: 'var(--mercury-gold)' }}>Token hóa dữ liệu thẻ trong sandbox</span>
               </div>
             </div>
 
@@ -569,7 +574,7 @@ function CheckoutContent() {
                   disabled={isProcessing}
                 >
                   <Lock size={18} />
-                  {isProcessing ? 'Đang gọi Spring Boot Engine...' : `Thanh toán ngay ${amount.toLocaleString('vi-VN')} ₫`}
+                  {isProcessing ? 'Đang xử lý thanh toán...' : `Thanh toán ngay ${amount.toLocaleString('vi-VN')} ₫`}
                 </button>
               </form>
             ) : (
@@ -581,7 +586,7 @@ function CheckoutContent() {
                     CHỌN NGÂN HÀNG THỤ HƯỞNG (OPEN BANKING):
                   </span>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {['ACB', 'MB', 'BIDV', 'VIETCOMBANK'].map((b) => (
+                    {['ACB', 'BIDV', 'VIETINBANK', 'NCB'].map((b) => (
                       <button
                         key={b}
                         type="button"

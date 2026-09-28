@@ -7,6 +7,7 @@ import lombok.Data;
 
 @Data
 public class BankSandboxReversalRequest {
+    private String bankCode;
     @NotBlank private String processorTransactionId;
     @NotNull @Min(1) private Long amount;
     @NotBlank private String currency;

@@ -62,9 +62,13 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/actuator/**",
                                 "/v1/checkout/**",
+                                "/v1/payment_links/public/**",
                                 "/api/public/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/v1/sandbox/bank/callbacks").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/v1/sandbox/bank/*/callbacks").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/sandbox/bank/providers").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/v1/bank_transactions/inbox/*").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/v1/platform/**").hasRole("PLATFORM_ADMIN")
                         .requestMatchers("/v1/payment_methods/**").hasAnyRole("SECRET", "PUBLISHABLE")

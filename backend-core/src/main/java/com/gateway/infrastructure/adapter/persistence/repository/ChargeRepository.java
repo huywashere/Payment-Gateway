@@ -10,9 +10,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.time.OffsetDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ChargeRepository extends JpaRepository<ChargeEntity, UUID> {
     List<ChargeEntity> findByPaymentIntentId(UUID paymentIntentId);
+    Page<ChargeEntity> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId, Pageable pageable);
     Optional<ChargeEntity> findByIdAndMerchantId(UUID id, UUID merchantId);
     Optional<ChargeEntity> findByMerchantIdAndProcessorTxId(UUID merchantId, String processorTxId);
     @Lock(LockModeType.PESSIMISTIC_WRITE)

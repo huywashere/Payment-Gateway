@@ -28,6 +28,7 @@ gateway:
   security:
     card-vault-master-key: ${GATEWAY_VAULT_KEY:ZGV2ZWxvcG1lbnQtb25seS12YXVsdC1rZXktMzIhISE=}
     allowed-origins: ${GATEWAY_ALLOWED_ORIGINS:http://localhost:3000}
+    platform-admin-key: ${GATEWAY_PLATFORM_ADMIN_KEY:platform_dev_admin_change_me}
 
 management:
   endpoints:

@@ -1,28 +1,35 @@
 package com.gateway.infrastructure.adapter.processor;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @ConditionalOnProperty(name = "gateway.processor.mode", havingValue = "bank-sandbox")
 public class BankSandboxProcessor implements BankProcessor {
-    private final String clientId;
-    private final String clientSecret;
-    private volatile OAuthToken token;
+    private final BankSandboxProperties properties;
+    private final Map<SandboxBank, OAuthToken> tokens = new ConcurrentHashMap<>();
 
-    public BankSandboxProcessor(
-            @Value("${gateway.processor.sandbox-client-id}") String clientId,
-            @Value("${gateway.processor.sandbox-client-secret}") String clientSecret) {
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
+    @Autowired
+    public BankSandboxProcessor(BankSandboxProperties properties) {
+        this.properties = properties;
+    }
+
+    BankSandboxProcessor(String clientId, String clientSecret) {
+        this.properties = new BankSandboxProperties();
+        this.properties.setSandboxClientId(clientId);
+        this.properties.setSandboxClientSecret(clientSecret);
     }
 
     @Override
@@ -31,13 +38,14 @@ public class BankSandboxProcessor implements BankProcessor {
     }
 
     private BankProcessResponse processNewPayment(BankProcessRequest request) {
-        accessToken();
+        SandboxBank bank = resolve(request.getBankCode());
+        accessToken(bank.name());
         String scenario = request.getScenario() == null ? "success" : request.getScenario().toLowerCase(Locale.ROOT);
         if ("requires_action".equals(scenario)) {
-            String transactionId = id("txn", request.getOperationId());
+            String transactionId = id(bank, "txn", request.getOperationId());
             return BankProcessResponse.builder().requiresAction(true)
                     .processorTransactionId(transactionId)
-                    .actionUrl("/sandbox/bank/authorize?transaction=" + transactionId).build();
+                    .actionUrl("/sandbox/bank/" + bank.name() + "/authorize?transaction=" + transactionId).build();
         }
         if ("timeout".equals(scenario)) {
             return failure("bank_timeout", "The simulated bank did not answer before the timeout");
@@ -46,34 +54,79 @@ public class BankSandboxProcessor implements BankProcessor {
             return failure(scenario, "The simulated bank declined this transaction");
         }
         return BankProcessResponse.builder().success(true)
-                .processorTransactionId(id("txn", request.getOperationId())).build();
+                .processorTransactionId(id(bank, "txn", request.getOperationId())).build();
     }
 
     @Override
     public String processorCode(String paymentMethodType) {
-        return "BANK_SANDBOX_" + paymentMethodType.toUpperCase(Locale.ROOT);
+        return processorCode(paymentMethodType, null);
+    }
+
+    @Override
+    public String processorCode(String paymentMethodType, String bankCode) {
+        return resolve(bankCode).name() + "_SANDBOX_" + paymentMethodType.toUpperCase(Locale.ROOT);
+    }
+
+    @Override
+    public String resolveBankCode(String bankCode) {
+        return resolve(bankCode).name();
+    }
+
+    @Override
+    public String bankCodeFromTransactionId(String processorTransactionId) {
+        SandboxBank bank = SandboxBank.fromTransactionId(processorTransactionId);
+        if (bank != null) return bank.name();
+        return processorTransactionId != null && processorTransactionId.startsWith("sbank_txn_")
+                ? resolve(null).name() : null;
+    }
+
+    @Override
+    public List<Map<String, Object>> availableBanks() {
+        return java.util.Arrays.stream(SandboxBank.values()).map(bank -> {
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("code", bank.name());
+            result.put("name", bank.displayName());
+            result.put("mode", "simulated-sandbox");
+            result.put("capabilities", List.of("payment", "callback", "reversal"));
+            return result;
+        }).toList();
     }
 
     @Override
     public BankReversalResponse reversePayment(BankReversalRequest request) {
-        accessToken();
-        if (request.getProcessorTransactionId() == null || !request.getProcessorTransactionId().startsWith("sbank_txn_")) {
+        SandboxBank inferred = SandboxBank.fromTransactionId(request.getProcessorTransactionId());
+        boolean legacyTransaction = request.getProcessorTransactionId() != null
+                && request.getProcessorTransactionId().startsWith("sbank_txn_");
+        if (inferred == null && legacyTransaction) inferred = resolve(null);
+        SandboxBank requested = request.getBankCode() == null || request.getBankCode().isBlank()
+                ? null : SandboxBank.fromCode(request.getBankCode());
+        if (inferred == null || (requested != null && requested != inferred)) {
             return reversalFailure("transaction_not_found", "Unknown sandbox bank transaction");
         }
+        accessToken(inferred.name());
         if (request.getAmount() == null || request.getAmount() <= 0) {
             return reversalFailure("invalid_amount", "Reversal amount must be positive");
         }
         String operationId = request.getOperationId() == null || request.getOperationId().isBlank()
                 ? request.getProcessorTransactionId() + ":" + request.getAmount()
                 : request.getOperationId();
-        String reversalId = id("rev", operationId);
+        String reversalId = id(inferred, "rev", operationId);
         return BankReversalResponse.builder().success(true).reversalId(reversalId).build();
     }
 
     public synchronized String accessToken() {
+        return accessToken(null);
+    }
+
+    public synchronized String accessToken(String bankCode) {
+        SandboxBank bank = resolve(bankCode);
+        OAuthToken token = tokens.get(bank);
         if (token == null || token.expiresAt().isBefore(Instant.now().plusSeconds(15))) {
-            String material = clientId + ":" + clientSecret + ":" + UUID.randomUUID();
-            token = new OAuthToken("sboauth_" + sha256(material).substring(0, 32), Instant.now().plusSeconds(300));
+            BankSandboxProperties.Credentials credentials = properties.credentials(bank);
+            String material = credentials.clientId() + ":" + credentials.clientSecret() + ":" + UUID.randomUUID();
+            token = new OAuthToken(bank.idPrefix() + "_oauth_" + sha256(material).substring(0, 32),
+                    Instant.now().plusSeconds(300));
+            tokens.put(bank, token);
         }
         return token.value();
     }
@@ -86,9 +139,13 @@ public class BankSandboxProcessor implements BankProcessor {
         return BankReversalResponse.builder().success(false).errorCode(code).errorMessage(message).build();
     }
 
-    private String id(String type, String operationId) {
+    private SandboxBank resolve(String bankCode) {
+        return SandboxBank.fromCode(bankCode == null || bankCode.isBlank() ? properties.getDefaultBank() : bankCode);
+    }
+
+    private String id(SandboxBank bank, String type, String operationId) {
         String material = operationId == null || operationId.isBlank() ? UUID.randomUUID().toString() : operationId;
-        return "sbank_" + type + "_" + sha256(type + ":" + material).substring(0, 20);
+        return bank.idPrefix() + "_" + type + "_" + sha256(bank.name() + ":" + type + ":" + material).substring(0, 20);
     }
 
     private String sha256(String value) {

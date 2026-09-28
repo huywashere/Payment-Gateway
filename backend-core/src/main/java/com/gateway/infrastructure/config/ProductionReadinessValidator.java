@@ -5,6 +5,8 @@ import com.gateway.infrastructure.adapter.processor.BankProcessor;
 import com.gateway.infrastructure.adapter.processor.LiveProcessorPlaceholder;
 import com.gateway.infrastructure.adapter.processor.LivePayoutProcessorPlaceholder;
 import com.gateway.infrastructure.adapter.processor.PayoutProcessor;
+import com.gateway.infrastructure.adapter.processor.AcquirerProcessor;
+import com.gateway.infrastructure.adapter.processor.LiveAcquirerPlaceholder;
 import com.gateway.infrastructure.adapter.security.KmsVaultServicePlaceholder;
 import com.gateway.infrastructure.adapter.security.PaymentMetadataVault;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +31,14 @@ public class ProductionReadinessValidator implements ApplicationRunner {
     private final BankProcessor bankProcessor;
     private final PayoutProcessor payoutProcessor;
     private final PaymentMetadataVault paymentMetadataVault;
+    private final AcquirerProcessor acquirerProcessor;
     private final MerchantRepository merchantRepository;
 
     @Override
     public void run(ApplicationArguments args) {
         requireEquals("gateway.mode", "live");
         requireEquals("gateway.processor.mode", "live");
+        requireEquals("gateway.acquirer.mode", "live");
         requireEquals("gateway.security.platform-auth-mode", "oidc");
         requireEquals("gateway.security.vault-provider", "kms");
         requireTrue("gateway.production.external-controls-attested");
@@ -52,6 +56,12 @@ public class ProductionReadinessValidator implements ApplicationRunner {
         }
         if (paymentMetadataVault instanceof KmsVaultServicePlaceholder) {
             fail("A real KMS/HSM PaymentMetadataVault adapter must replace KmsVaultServicePlaceholder");
+        }
+        if (acquirerProcessor instanceof LiveAcquirerPlaceholder) {
+            fail("A contracted live AcquirerProcessor adapter must replace LiveAcquirerPlaceholder");
+        }
+        if ("placeholder".equalsIgnoreCase(required("gateway.webhooks.alert-provider"))) {
+            fail("A real webhook alert provider must replace the placeholder");
         }
 
         validateOrigins();

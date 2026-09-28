@@ -37,9 +37,9 @@ export default function HomePage() {
 
   const [terminalLogs, setTerminalLogs] = useState<string[]>([
     '$ apipay payment-intent:create --amount=500000 --currency=VND',
-    '✓ Initialized Spring Boot 3.3.4 Virtual Threads Engine',
-    '✓ Idempotency Shield: Redis Redisson Lock Acquired',
-    '✓ Double-Entry Ledger: Balanced Nợ/Có Entry Recorded',
+    '✓ Payment service initialized',
+    '✓ Idempotency protection enabled',
+    '✓ Financial ledger entry recorded',
     '✓ VietQR Napas 24/7 Dynamic Code Generated',
     '✓ Status: READY FOR CHECKOUT [200 OK]',
   ]);
@@ -89,7 +89,7 @@ export default function HomePage() {
         setTerminalLogs((prev) => [...prev, 'Lỗi kết nối từ Gateway Engine']);
       }
     } catch (err) {
-      setTerminalLogs((prev) => [...prev, 'Không kết nối được Spring Boot Core: ' + err]);
+      setTerminalLogs((prev) => [...prev, 'Không thể kết nối dịch vụ thanh toán: ' + err]);
     } finally {
       setTerminalRunning(false);
     }
@@ -443,7 +443,7 @@ export default function HomePage() {
                 Thanh Toán Trực Tuyến (Online Payments)
               </h3>
               <p style={{ color: '#64748b', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '24px' }}>
-                Tối ưu hóa giỏ hàng với Hosted Checkout mượt mà, hỗ trợ thanh toán 1-click, tokenization an toàn chuẩn PCI-DSS và hạn chế tối đa rớt đơn.
+                Tối ưu hóa giỏ hàng với Hosted Checkout mượt mà, hỗ trợ thanh toán nhanh, tokenization và hạn chế tối đa rớt đơn.
               </p>
               <Link
                 href="/checkout"
@@ -649,7 +649,7 @@ export default function HomePage() {
                 marginBottom: '16px',
               }}
             >
-              Xây dựng trên Spring Boot 3.3.4, PostgreSQL 16 & Redis
+              Hạ tầng thanh toán ổn định và có khả năng mở rộng
             </h2>
             <p style={{ color: '#64748b', fontSize: '1.05rem', lineHeight: 1.6 }}>
               Kiến trúc Virtual Threads giúp xử lý hàng ngàn giao dịch đồng thời mà không nghẽn luồng. Kết hợp khóa phân tán Redisson chống double-charge 100%.
@@ -697,7 +697,7 @@ export default function HomePage() {
                 99.999%
               </div>
               <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: '6px' }}>
-                PostgreSQL 16 & Cụm Redis phân tán
+                Lưu trữ bền vững và xử lý phân tán
               </div>
             </div>
 
@@ -873,7 +873,7 @@ export default function HomePage() {
                   onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#0abf53')}
                 >
                   <Zap size={16} />
-                  <span>{terminalRunning ? 'Đang gọi Spring Boot Core...' : 'Chạy thử API tạo PaymentIntent'}</span>
+                  <span>{terminalRunning ? 'Đang gửi yêu cầu...' : 'Chạy thử API tạo PaymentIntent'}</span>
                 </button>
 
                 <Link
@@ -906,7 +906,7 @@ export default function HomePage() {
         id="adyen-concierge-widget"
         onClick={() =>
           alert(
-            'ApiPay Financial Engine: Đang kết nối trực tiếp với Spring Boot 3.3.4 (Port 8080), PostgreSQL 16 (Port 5433), Redis (Port 6379) và RabbitMQ 3.13!'
+            'ApiPay sandbox đang hoạt động. Bạn có thể thử tạo giao dịch, Payment Link, webhook và vòng đời thanh toán ngay trên máy local.'
           )
         }
         style={{

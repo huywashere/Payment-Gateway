@@ -58,6 +58,7 @@ public class RefundService {
         BankProcessor.BankReversalResponse reversal = bankProcessor.reversePayment(
                 BankProcessor.BankReversalRequest.builder()
                         .operationId(merchantId + ":refund:" + idempotencyKey)
+                        .bankCode(bankProcessor.bankCodeFromTransactionId(charge.getProcessorTxId()))
                         .processorTransactionId(charge.getProcessorTxId()).amount(amount)
                         .currency(charge.getCurrency()).reason(request.getReason()).build());
         if (!reversal.isSuccess()) {

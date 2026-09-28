@@ -97,6 +97,34 @@ export class GatewayServer extends BaseClient {
       method: 'POST', body: { evidence },
     });
   }
+
+  createPaymentLink(params, { idempotencyKey = crypto.randomUUID() } = {}) { return this.request('/v1/payment_links', { method: 'POST', body: params, idempotencyKey }); }
+  listPaymentLinks() { return this.request('/v1/payment_links'); }
+  getPaymentLink(id) { return this.request(`/v1/payment_links/${encodeURIComponent(id)}`); }
+  listBankAccounts() { return this.request('/v1/bank_accounts'); }
+  createBankAccount(params) { return this.request('/v1/bank_accounts', { method: 'POST', body: params }); }
+  setDefaultBankAccount(id) { return this.request(`/v1/bank_accounts/${encodeURIComponent(id)}/default`, { method: 'POST' }); }
+  disableBankAccount(id) { return this.request(`/v1/bank_accounts/${encodeURIComponent(id)}`, { method: 'DELETE' }); }
+  listBankTransactions({ limit = 50 } = {}) { return this.request(`/v1/bank_transactions?limit=${limit}`); }
+  getBankTransaction(id) { return this.request(`/v1/bank_transactions/${encodeURIComponent(id)}`); }
+  listOrganizationMembers() { return this.request('/v1/organization/members'); }
+  inviteOrganizationMember(params) { return this.request('/v1/organization/members', { method: 'POST', body: params }); }
+  updateOrganizationMember(id, params) { return this.request(`/v1/organization/members/${encodeURIComponent(id)}`, { method: 'PUT', body: params }); }
+  getSubscription() { return this.request('/v1/organization/subscription'); }
+  listPlans() { return this.request('/v1/organization/plans'); }
+  changePlan(plan) { return this.request('/v1/organization/subscription', { method: 'PUT', body: { plan } }); }
+  executeAcquirerOperation(params, { idempotencyKey = crypto.randomUUID() } = {}) { return this.request('/v1/acquirer/operations', { method: 'POST', body: params, idempotencyKey }); }
+  listAcquirerOperations(paymentIntentId) { return this.request(`/v1/acquirer/operations?paymentIntentId=${encodeURIComponent(paymentIntentId)}`); }
+  completeThreeDs(id, successful = true) { return this.request(`/v1/acquirer/operations/${encodeURIComponent(id)}/3ds`, { method: 'POST', body: { successful } }); }
+  getHostedFieldsConfig() { return this.request('/v1/acquirer/hosted-fields/config'); }
+  createWebhookEndpoint(params) { return this.request('/v1/webhooks/endpoints', { method: 'POST', body: params }); }
+  listWebhookEndpoints() { return this.request('/v1/webhooks/endpoints'); }
+  testWebhookEndpoint(id) { return this.request(`/v1/webhooks/endpoints/${encodeURIComponent(id)}/test`, { method: 'POST' }); }
+  testWebhookAlert(id) { return this.request(`/v1/webhooks/endpoints/${encodeURIComponent(id)}/test-alert`, { method: 'POST' }); }
+  rotateWebhookSecret(id) { return this.request(`/v1/webhooks/endpoints/${encodeURIComponent(id)}/rotate-secret`, { method: 'POST' }); }
+  listWebhookDeliveries({ limit = 25 } = {}) { return this.request(`/v1/webhooks/deliveries?limit=${limit}`); }
+  replayWebhookDelivery(id) { return this.request(`/v1/webhooks/deliveries/${encodeURIComponent(id)}/replay`, { method: 'POST' }); }
+  listWebhookAlerts() { return this.request('/v1/webhooks/alerts'); }
 }
 
 export class GatewaySandbox extends BaseClient {
@@ -105,6 +133,19 @@ export class GatewaySandbox extends BaseClient {
       method: 'POST', body: { type, scenario, holderName },
     });
   }
+}
+
+export class GatewayPublic {
+  constructor({ baseUrl = 'http://localhost:8080', fetchImpl = globalThis.fetch, timeout = DEFAULT_TIMEOUT } = {}) {
+    this.baseUrl = baseUrl.replace(/\/$/, ''); this.fetchImpl = fetchImpl; this.timeout = timeout;
+  }
+  async getPaymentLink(slug) {
+    const response = await this.fetchImpl(`${this.baseUrl}/v1/payment_links/public/${encodeURIComponent(slug)}`, { signal: AbortSignal.timeout(this.timeout) });
+    if (!response.ok) throw new GatewayError(`Gateway request failed with HTTP ${response.status}`, response.status);
+    return response.json();
+  }
+  paymentLinkEventsUrl(slug) { return `${this.baseUrl}/v1/payment_links/public/${encodeURIComponent(slug)}/events`; }
+  paymentLinkQrUrl(slug, size = 360) { return `${this.baseUrl}/v1/payment_links/public/${encodeURIComponent(slug)}/qr.svg?size=${size}`; }
 }
 
 export { GatewayError };

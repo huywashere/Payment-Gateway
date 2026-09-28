@@ -11,5 +11,5 @@ public interface WebhookEndpointRepository extends JpaRepository<WebhookEndpoint
     List<WebhookEndpointEntity> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
     List<WebhookEndpointEntity> findByMerchantIdAndStatus(UUID merchantId, String status);
     Optional<WebhookEndpointEntity> findByIdAndMerchantId(UUID id, UUID merchantId);
+    long countByMerchantIdAndStatus(UUID merchantId, String status);
 }
-

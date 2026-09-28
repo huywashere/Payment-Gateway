@@ -28,9 +28,43 @@ export class GatewayServer {
   updateRiskProfile(params: Record<string, unknown>): Promise<Record<string, unknown>>;
   listDisputes(): Promise<Record<string, unknown>[]>;
   submitDisputeEvidence(id: string, evidence: Record<string, unknown>): Promise<Record<string, unknown>>;
+  createPaymentLink(params: Record<string, unknown>, options?: { idempotencyKey?: string }): Promise<Record<string, unknown>>;
+  listPaymentLinks(): Promise<Record<string, unknown>[]>;
+  getPaymentLink(id: string): Promise<Record<string, unknown>>;
+  listBankAccounts(): Promise<Record<string, unknown>[]>;
+  createBankAccount(params: Record<string, unknown>): Promise<Record<string, unknown>>;
+  setDefaultBankAccount(id: string): Promise<Record<string, unknown>>;
+  disableBankAccount(id: string): Promise<Record<string, unknown>>;
+  listBankTransactions(options?: { limit?: number }): Promise<Record<string, unknown>[]>;
+  getBankTransaction(id: string): Promise<Record<string, unknown>>;
+  listOrganizationMembers(): Promise<Record<string, unknown>[]>;
+  inviteOrganizationMember(params: Record<string, unknown>): Promise<Record<string, unknown>>;
+  updateOrganizationMember(id: string, params: Record<string, unknown>): Promise<Record<string, unknown>>;
+  getSubscription(): Promise<Record<string, unknown>>;
+  listPlans(): Promise<Record<string, unknown>[]>;
+  changePlan(plan: string): Promise<Record<string, unknown>>;
+  executeAcquirerOperation(params: Record<string, unknown>, options?: { idempotencyKey?: string }): Promise<Record<string, unknown>>;
+  listAcquirerOperations(paymentIntentId: string): Promise<Record<string, unknown>[]>;
+  completeThreeDs(id: string, successful?: boolean): Promise<Record<string, unknown>>;
+  getHostedFieldsConfig(): Promise<Record<string, unknown>>;
+  createWebhookEndpoint(params: Record<string, unknown>): Promise<Record<string, unknown>>;
+  listWebhookEndpoints(): Promise<Record<string, unknown>[]>;
+  testWebhookEndpoint(id: string): Promise<Record<string, unknown>>;
+  testWebhookAlert(id: string): Promise<Record<string, unknown>>;
+  rotateWebhookSecret(id: string): Promise<Record<string, unknown>>;
+  listWebhookDeliveries(options?: { limit?: number }): Promise<Record<string, unknown>[]>;
+  replayWebhookDelivery(id: string): Promise<Record<string, unknown>>;
+  listWebhookAlerts(): Promise<Record<string, unknown>[]>;
 }
 
 export class GatewaySandbox {
   constructor(options: ClientOptions);
   createPaymentMethod(params?: { type?: PaymentMethodType; scenario?: SandboxScenario; holderName?: string }): Promise<Record<string, unknown>>;
+}
+
+export class GatewayPublic {
+  constructor(options?: Omit<ClientOptions, 'apiKey'>);
+  getPaymentLink(slug: string): Promise<Record<string, unknown>>;
+  paymentLinkEventsUrl(slug: string): string;
+  paymentLinkQrUrl(slug: string, size?: number): string;
 }

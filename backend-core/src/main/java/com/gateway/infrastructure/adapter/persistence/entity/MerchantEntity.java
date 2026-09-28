@@ -37,6 +37,17 @@ public class MerchantEntity {
     @Column(name = "webhook_secret", nullable = false)
     private String webhookSecret;
 
+    @Column(name = "onboarding_status", nullable = false)
+    @Builder.Default
+    private String onboardingStatus = "ACTIVE";
+
+    @Column(name = "kyb_status", nullable = false)
+    @Builder.Default
+    private String kybStatus = "NOT_STARTED";
+
+    @Column(name = "legal_name")
+    private String legalName;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;

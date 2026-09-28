@@ -38,6 +38,9 @@ spring:
 # Gateway Custom Configurations
 gateway:
   mode: ${GATEWAY_MODE:sandbox}
+  acquirer:
+    mode: ${GATEWAY_ACQUIRER_MODE:sandbox}
+    live-adapter: ${GATEWAY_LIVE_ACQUIRER_ADAPTER:placeholder}
   processor:
     mode: ${GATEWAY_PROCESSOR_MODE:mock}
     live-adapter: ${GATEWAY_LIVE_PROCESSOR_ADAPTER:placeholder}
@@ -45,6 +48,24 @@ gateway:
     sandbox-client-id: ${BANK_SANDBOX_CLIENT_ID:project-client}
     sandbox-client-secret: ${BANK_SANDBOX_CLIENT_SECRET:project-secret}
     sandbox-callback-secret: ${BANK_SANDBOX_CALLBACK_SECRET:project-callback-secret}
+    default-bank: ${BANK_SANDBOX_DEFAULT_BANK:ACB}
+    banks:
+      acb:
+        client-id: ${ACB_SANDBOX_CLIENT_ID:}
+        client-secret: ${ACB_SANDBOX_CLIENT_SECRET:}
+        callback-secret: ${ACB_SANDBOX_CALLBACK_SECRET:}
+      bidv:
+        client-id: ${BIDV_SANDBOX_CLIENT_ID:}
+        client-secret: ${BIDV_SANDBOX_CLIENT_SECRET:}
+        callback-secret: ${BIDV_SANDBOX_CALLBACK_SECRET:}
+      vietinbank:
+        client-id: ${VIETINBANK_SANDBOX_CLIENT_ID:}
+        client-secret: ${VIETINBANK_SANDBOX_CLIENT_SECRET:}
+        callback-secret: ${VIETINBANK_SANDBOX_CALLBACK_SECRET:}
+      ncb:
+        client-id: ${NCB_SANDBOX_CLIENT_ID:}
+        client-secret: ${NCB_SANDBOX_CLIENT_SECRET:}
+        callback-secret: ${NCB_SANDBOX_CALLBACK_SECRET:}
   security:
     platform-admin-key: ${GATEWAY_PLATFORM_ADMIN_KEY:}
     platform-auth-mode: ${GATEWAY_PLATFORM_AUTH_MODE:key}
@@ -65,6 +86,8 @@ gateway:
     poll-interval-ms: ${GATEWAY_WEBHOOK_POLL_INTERVAL_MS:2000}
     require-https: ${GATEWAY_WEBHOOK_REQUIRE_HTTPS:false}
     store-response-body: ${GATEWAY_WEBHOOK_STORE_RESPONSE_BODY:false}
+    alert-provider: ${GATEWAY_WEBHOOK_ALERT_PROVIDER:mock}
+    alert-poll-interval-ms: ${GATEWAY_WEBHOOK_ALERT_POLL_INTERVAL_MS:3000}
   rate-limit:
     enabled: ${GATEWAY_RATE_LIMIT_ENABLED:false}
     requests-per-minute: ${GATEWAY_RATE_LIMIT_REQUESTS_PER_MINUTE:300}

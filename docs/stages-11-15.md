@@ -13,7 +13,7 @@ Local demo credentials are `owner@apipay.local`, `developer@apipay.local`, `fina
 
 ## Stage 12 - Bank sandbox SPI
 
-Select `GATEWAY_PROCESSOR_MODE=bank-sandbox` to use a processor that obtains a short-lived OAuth-style token, emits bank-style transaction references and supports idempotent reversals. Signed callbacks use the same timestamped HMAC envelope as merchant webhooks, persist an inbox record and atomically update charge, intent, ledger and outbox. `live` selects fail-closed charge and payout placeholders until contracted adapters exist.
+Select `GATEWAY_PROCESSOR_MODE=bank-sandbox` to use the ACB, BIDV, VietinBank and NCB simulated adapters. Each profile has an independent OAuth-style token cache, callback secret, transaction namespace and processor code. Signed callbacks use the same timestamped HMAC envelope as merchant webhooks, persist an inbox record and atomically update charge, intent, ledger and outbox. `live` selects fail-closed charge and payout placeholders until contracted adapters exist. See `docs/multi-bank-sandbox.md` for API examples and the boundary between local simulation and external UAT.
 
 ## Stage 13 - Staging and recovery
 

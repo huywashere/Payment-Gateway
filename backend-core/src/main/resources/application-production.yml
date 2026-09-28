@@ -36,6 +36,9 @@ spring:
 
 gateway:
   mode: ${GATEWAY_MODE:live}
+  acquirer:
+    mode: ${GATEWAY_ACQUIRER_MODE:live}
+    live-adapter: ${GATEWAY_LIVE_ACQUIRER_ADAPTER:placeholder}
   processor:
     mode: ${GATEWAY_PROCESSOR_MODE:live}
     live-adapter: ${GATEWAY_LIVE_PROCESSOR_ADAPTER:placeholder}
@@ -54,6 +57,7 @@ gateway:
     allow-private-endpoints: false
     require-https: true
     store-response-body: false
+    alert-provider: ${GATEWAY_WEBHOOK_ALERT_PROVIDER:placeholder}
   rate-limit:
     enabled: ${GATEWAY_RATE_LIMIT_ENABLED:true}
     fail-open: ${GATEWAY_RATE_LIMIT_FAIL_OPEN:false}

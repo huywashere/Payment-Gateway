@@ -10,8 +10,8 @@ import lombok.*;
 public class SandboxCheckoutRequest {
     @NotBlank
     private String paymentMethodType;
+    private String bankCode;
     @Builder.Default
     private String scenario = "success";
     private String returnUrl;
 }
-

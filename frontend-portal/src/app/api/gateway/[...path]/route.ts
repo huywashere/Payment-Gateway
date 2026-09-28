@@ -2,10 +2,11 @@ import { portalMode, roleCanAccess, sessionTokenFromCookie, verifyPortalSession,
 
 const PUBLIC_CHECKOUT_PATH = /^v1\/checkout\/[A-Za-z0-9_-]+(?:\/pay)?$/;
 const SANDBOX_CHECKOUT_PATH = /^v1\/checkout\/[A-Za-z0-9_-]+\/sandbox\/(?:complete|action)$/;
+const PUBLIC_PAYMENT_LINK_PATH = /^v1\/payment_links\/public\/[A-Za-z0-9_-]+(?:\/(?:qr\.svg|events))?$/;
 type Area = 'dashboard' | 'developer' | 'finance' | 'audit';
-const PRIVATE_ROUTES: Array<{ pattern: RegExp; methods: string[]; area: Area }> = [
+const PRIVATE_ROUTES: Array<{ pattern: RegExp; methods: string[]; area: Area; ownerOnly?: boolean; platform?: boolean }> = [
   { pattern: /^v1\/balance$/, methods: ['GET'], area: 'dashboard' },
-  { pattern: /^v1\/payment_intents$/, methods: ['POST'], area: 'developer' },
+  { pattern: /^v1\/payment_intents$/, methods: ['GET', 'POST'], area: 'developer' },
   { pattern: /^v1\/payment_intents\/[0-9a-f-]+$/, methods: ['GET'], area: 'dashboard' },
   { pattern: /^v1\/payment_intents\/[0-9a-f-]+\/(?:confirm|cancel)$/, methods: ['POST'], area: 'developer' },
   { pattern: /^v1\/charges\/[0-9a-f-]+\/refunds$/, methods: ['POST'], area: 'finance' },
@@ -13,7 +14,9 @@ const PRIVATE_ROUTES: Array<{ pattern: RegExp; methods: string[]; area: Area }> 
   { pattern: /^v1\/(?:api_keys|webhooks\/endpoints|webhooks\/deliveries)$/, methods: ['GET', 'POST'], area: 'developer' },
   { pattern: /^v1\/audit_logs$/, methods: ['GET'], area: 'audit' },
   { pattern: /^v1\/api_keys\/[0-9a-f-]+(?:\/rotate)?$/, methods: ['POST', 'DELETE'], area: 'developer' },
-  { pattern: /^v1\/webhooks\/(?:endpoints|deliveries)\/[0-9a-f-]+(?:\/replay)?$/, methods: ['POST', 'DELETE'], area: 'developer' },
+  { pattern: /^v1\/webhooks\/endpoints\/[0-9a-f-]+(?:\/(?:rotate-secret|test|test-alert))?$/, methods: ['POST', 'DELETE'], area: 'developer' },
+  { pattern: /^v1\/webhooks\/deliveries\/[0-9a-f-]+\/replay$/, methods: ['POST'], area: 'developer' },
+  { pattern: /^v1\/webhooks\/alerts$/, methods: ['GET'], area: 'developer' },
   { pattern: /^v1\/payment_methods$/, methods: ['POST'], area: 'developer' },
   { pattern: /^v1\/(?:settlements|payouts)$/, methods: ['GET', 'POST'], area: 'finance' },
   { pattern: /^v1\/disputes$/, methods: ['GET'], area: 'audit' },
@@ -21,7 +24,22 @@ const PRIVATE_ROUTES: Array<{ pattern: RegExp; methods: string[]; area: Area }> 
   { pattern: /^v1\/risk\/(?:profile|evaluations)$/, methods: ['GET', 'PUT'], area: 'finance' },
   { pattern: /^v1\/reconciliation_runs(?:\/[0-9a-f-]+)?$/, methods: ['GET'], area: 'audit' },
   { pattern: /^v1\/sandbox\/bank\/reversals$/, methods: ['POST'], area: 'finance' },
+  { pattern: /^v1\/sandbox\/reset$/, methods: ['POST'], area: 'dashboard', ownerOnly: true },
   { pattern: /^v1\/customers\/[0-9a-f-]+\/pii$/, methods: ['DELETE'], area: 'finance' },
+  { pattern: /^v1\/bank_accounts$/, methods: ['GET', 'POST'], area: 'finance' },
+  { pattern: /^v1\/bank_accounts\/[0-9a-f-]+(?:\/default)?$/, methods: ['POST', 'DELETE'], area: 'finance' },
+  { pattern: /^v1\/payment_links$/, methods: ['GET', 'POST'], area: 'finance' },
+  { pattern: /^v1\/payment_links\/[0-9a-f-]+$/, methods: ['GET'], area: 'finance' },
+  { pattern: /^v1\/bank_transactions$/, methods: ['GET'], area: 'finance' },
+  { pattern: /^v1\/bank_transactions\/[0-9a-f-]+$/, methods: ['GET'], area: 'finance' },
+  { pattern: /^v1\/organization\/(?:members|subscription|plans)$/, methods: ['GET', 'POST', 'PUT'], area: 'dashboard', ownerOnly: true },
+  { pattern: /^v1\/organization\/members\/[0-9a-f-]+$/, methods: ['PUT'], area: 'dashboard', ownerOnly: true },
+  { pattern: /^v1\/reports\/transactions\.csv$/, methods: ['GET'], area: 'finance' },
+  { pattern: /^v1\/acquirer\/(?:operations|hosted-fields\/config)$/, methods: ['GET', 'POST'], area: 'developer' },
+  { pattern: /^v1\/acquirer\/operations\/[0-9a-f-]+\/3ds$/, methods: ['POST'], area: 'developer' },
+  { pattern: /^v1\/platform\/merchants$/, methods: ['GET', 'POST'], area: 'dashboard', ownerOnly: true, platform: true },
+  { pattern: /^v1\/platform\/merchants\/[0-9a-f-]+$/, methods: ['PUT'], area: 'dashboard', ownerOnly: true, platform: true },
+  { pattern: /^v1\/platform\/operations\/readiness$/, methods: ['GET'], area: 'dashboard', ownerOnly: true, platform: true },
 ];
 
 function getServerConfig() {
@@ -42,6 +60,7 @@ function getServerConfig() {
     coreUrl: (coreUrl || 'http://localhost:8080').replace(/\/$/, ''),
     secretKey: secretKey || 'sk_test_demo_gateway_key_999',
     mode,
+    platformAdminKey: process.env.GATEWAY_PLATFORM_ADMIN_KEY?.trim(),
   };
 }
 
@@ -64,6 +83,7 @@ async function proxyToCore(request: Request, context: RouteContext<'/api/gateway
   }
 
   const publicCheckout = PUBLIC_CHECKOUT_PATH.test(pathname)
+    || PUBLIC_PAYMENT_LINK_PATH.test(pathname)
     || (serverConfig.mode === 'sandbox' && SANDBOX_CHECKOUT_PATH.test(pathname));
   const rule = privateRule(pathname, request.method);
   if ((!publicCheckout || !['GET', 'POST'].includes(request.method)) && !rule) {
@@ -80,6 +100,9 @@ async function proxyToCore(request: Request, context: RouteContext<'/api/gateway
     if (!rule || !roleCanAccess(role, rule.area)) {
       return Response.json({ error: 'Your portal role cannot perform this operation' }, { status: 403 });
     }
+    if (rule.ownerOnly && role !== 'OWNER') {
+      return Response.json({ error: 'Owner role is required' }, { status: 403 });
+    }
     if (!['GET', 'HEAD'].includes(request.method)) {
       const origin = request.headers.get('origin');
       if (origin && origin !== new URL(request.url).origin) {
@@ -93,8 +116,14 @@ async function proxyToCore(request: Request, context: RouteContext<'/api/gateway
   const idempotencyKey = request.headers.get('idempotency-key');
   if (contentType) headers.set('content-type', contentType);
   if (idempotencyKey) headers.set('idempotency-key', idempotencyKey);
-  if (!publicCheckout) {
+  if (!publicCheckout && !rule?.platform) {
     headers.set('authorization', `Bearer ${serverConfig.secretKey}`);
+  }
+  if (rule?.platform) {
+    if (!serverConfig.platformAdminKey) {
+      return Response.json({ error: 'Platform administration is not configured' }, { status: 503 });
+    }
+    headers.set('x-platform-admin-key', serverConfig.platformAdminKey);
   }
 
   const body = request.method === 'GET' || request.method === 'HEAD'
@@ -108,7 +137,7 @@ async function proxyToCore(request: Request, context: RouteContext<'/api/gateway
       headers,
       body,
       cache: 'no-store',
-      signal: AbortSignal.timeout(10_000),
+      signal: pathname.endsWith('/events') ? undefined : AbortSignal.timeout(10_000),
     });
 
     return new Response(upstream.body, {

@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
+import org.springframework.data.domain.PageRequest;
 
 @RestController
 @RequestMapping("/v1")
@@ -41,6 +43,15 @@ public class PaymentIntentController {
         UUID merchantId = (UUID) authentication.getPrincipal();
         PaymentIntentResponse response = paymentIntentService.createPaymentIntent(merchantId, idempotencyKey, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/payment_intents")
+    @PreAuthorize("hasAnyAuthority('SCOPE_payments:read', 'SCOPE_*')")
+    public List<PaymentIntentEntity> listPaymentIntents(Authentication authentication,
+                                                        @RequestParam(defaultValue = "25") int limit) {
+        int bounded = Math.max(1, Math.min(limit, 100));
+        return paymentIntentRepository.findByMerchantIdOrderByCreatedAtDesc(
+                (UUID) authentication.getPrincipal(), PageRequest.of(0, bounded)).getContent();
     }
 
     @PostMapping("/payment_intents/{id}/confirm")

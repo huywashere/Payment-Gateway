@@ -69,7 +69,7 @@ export default function DemoStorePage() {
         alert('Lỗi tạo phiên thanh toán từ Gateway Core');
       }
     } catch (err) {
-      alert('Không kết nối được Spring Boot Core: ' + err);
+      alert('Không thể kết nối dịch vụ thanh toán: ' + err);
     } finally {
       setPurchasingId(null);
     }
@@ -130,7 +130,7 @@ export default function DemoStorePage() {
           TechGear Vietnam Store
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.08rem', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
-          Bấm <strong>&quot;Mua ngay với ApiPay&quot;</strong> để trải nghiệm toàn bộ hành trình gọi API Spring Boot, định tuyến Checkout Adyen và ghi nhận Sổ cái kép Mercury.
+          Bấm <strong>&quot;Mua ngay với ApiPay&quot;</strong> để trải nghiệm hành trình tạo đơn, thanh toán và theo dõi trạng thái giao dịch.
         </p>
       </div>
 

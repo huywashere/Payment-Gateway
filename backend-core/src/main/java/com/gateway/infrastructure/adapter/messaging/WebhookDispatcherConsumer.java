@@ -37,6 +37,7 @@ public class WebhookDispatcherConsumer {
             List<WebhookEndpointEntity> endpoints = endpointRepository.findByMerchantIdAndStatus(merchantId, "ACTIVE");
             for (WebhookEndpointEntity endpoint : endpoints) {
                 if (!subscribed(endpoint.getSubscribedEvents(), eventType)) continue;
+                if (!matchesFilters(endpoint, payload)) continue;
                 if (deliveryRepository.existsByEventIdAndEndpointId(eventId, endpoint.getId())) continue;
                 deliveryRepository.save(WebhookDeliveryEntity.builder()
                         .merchantId(merchantId).eventId(eventId).endpointId(endpoint.getId())
@@ -54,6 +55,37 @@ public class WebhookDispatcherConsumer {
         if (subscriptions == null || subscriptions.isBlank() || "*".equals(subscriptions)) return true;
         for (String value : subscriptions.split(",")) {
             if (value.trim().equals(eventType)) return true;
+        }
+        return false;
+    }
+
+    private boolean matchesFilters(WebhookEndpointEntity endpoint, JsonNode envelope) {
+        JsonNode object = envelope.path("data").path("object");
+        return matches(endpoint.getBankCodeFilter(), text(object, "bank_code"))
+                && matches(endpoint.getAccountIdFilter(), text(object, "bank_account_id"))
+                && matches(endpoint.getDirectionFilter(), text(object, "direction"))
+                && matchesPrefix(endpoint.getPaymentCodePrefixFilter(), text(object, "payment_code"));
+    }
+
+    private String text(JsonNode object, String field) {
+        JsonNode value = object.path(field);
+        return value.isMissingNode() || value.isNull() ? null : value.asText();
+    }
+
+    private boolean matches(String csv, String value) {
+        if (csv == null || csv.isBlank() || "*".equals(csv)) return true;
+        if (value == null) return false;
+        for (String candidate : csv.split(",")) {
+            if (candidate.trim().equalsIgnoreCase(value)) return true;
+        }
+        return false;
+    }
+
+    private boolean matchesPrefix(String csv, String value) {
+        if (csv == null || csv.isBlank() || "*".equals(csv)) return true;
+        if (value == null) return false;
+        for (String prefix : csv.split(",")) {
+            if (value.regionMatches(true, 0, prefix.trim(), 0, prefix.trim().length())) return true;
         }
         return false;
     }

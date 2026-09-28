@@ -5,6 +5,8 @@ import com.gateway.application.dto.WebhookEndpointResponse;
 import com.gateway.application.service.WebhookEndpointService;
 import com.gateway.infrastructure.adapter.persistence.entity.WebhookDeliveryEntity;
 import com.gateway.infrastructure.adapter.persistence.repository.WebhookDeliveryRepository;
+import com.gateway.infrastructure.adapter.persistence.entity.WebhookAlertEntity;
+import com.gateway.infrastructure.adapter.persistence.repository.WebhookAlertRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +25,7 @@ import java.util.UUID;
 public class WebhookEndpointController {
     private final WebhookEndpointService service;
     private final WebhookDeliveryRepository deliveryRepository;
+    private final WebhookAlertRepository alertRepository;
 
     @GetMapping("/endpoints")
     public List<WebhookEndpointResponse> endpoints(Authentication authentication) {
@@ -55,5 +58,26 @@ public class WebhookEndpointController {
     public void replay(Authentication authentication, @PathVariable UUID id) {
         service.replay((UUID) authentication.getPrincipal(), id);
     }
-}
 
+    @PostMapping("/endpoints/{id}/rotate-secret")
+    public WebhookEndpointResponse rotateSecret(Authentication authentication, @PathVariable UUID id) {
+        return service.rotateSecret((UUID) authentication.getPrincipal(), id);
+    }
+
+    @PostMapping("/endpoints/{id}/test")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public java.util.Map<String, UUID> test(Authentication authentication, @PathVariable UUID id) {
+        return java.util.Map.of("delivery_id", service.testDelivery((UUID) authentication.getPrincipal(), id));
+    }
+
+    @GetMapping("/alerts")
+    public List<WebhookAlertEntity> alerts(Authentication authentication) {
+        return alertRepository.findByMerchantIdOrderByCreatedAtDesc((UUID) authentication.getPrincipal());
+    }
+
+    @PostMapping("/endpoints/{id}/test-alert")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public java.util.Map<String, UUID> testAlert(Authentication authentication, @PathVariable UUID id) {
+        return java.util.Map.of("alert_id", service.testAlert((UUID) authentication.getPrincipal(), id));
+    }
+}

@@ -7,6 +7,7 @@ import lombok.Data;
 
 @Data
 public class BankSandboxCallbackRequest {
+    private String bankCode;
     @NotBlank private String eventId;
     @NotBlank private String processorTransactionId;
     @NotBlank private String status;

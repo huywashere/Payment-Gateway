@@ -54,6 +54,18 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
    - Live charge/payout/KMS placeholders cố ý chặn khởi động cho tới khi adapter thật được cung cấp.
    - Kubernetes HA baseline và production evidence gate không cho checklist giả được xem là phê duyệt thật.
 
+11. **VietQR, Payment Links & SaaS Simulation:**
+   - Payload EMVCo/VietQR có CRC, mã thanh toán riêng, expiry, public payment page, SSE realtime và polling dự phòng.
+   - Signed bank transaction inbox, matching engine IPN-first, dedup và trạng thái manual review khi mơ hồ.
+   - Webhook HMAC/API key/OAuth2, filter, test delivery, secret rotation, retry/DLQ và durable alert queue.
+   - Organization members, plan/quota, report CSV và acquirer SPI với 3DS/capture/void/refund/dispute sandbox.
+
+12. **Portal quản trị và trải nghiệm demo hoàn chỉnh:**
+   - UI webhook nâng cao: filter, HMAC/API Key/OAuth2, test delivery/alert, replay, DLQ và xoay secret.
+   - UI tổ chức/gói/quota, Platform Admin merchant/KYB/lock và Acquirer Playground đầy đủ vòng đời.
+   - Trang chi tiết Payment Link/giao dịch, empty/loading/error/toast dùng chung và soft reset sandbox giữ lịch sử tài chính.
+   - JavaScript SDK bao phủ Payment Link, bank inbox, organization, acquirer và webhook nâng cao.
+
 ---
 
 ## 🛠 Tech Stack
@@ -155,6 +167,8 @@ Runbook xử lý sự cố và ý nghĩa cảnh báo nằm trong [`docs/operatio
 Phạm vi và cách kiểm thử giai đoạn 6-8 nằm trong [`docs/stages-6-8.md`](docs/stages-6-8.md).
 Money operations và hardening giai đoạn 9-10 nằm trong [`docs/stages-9-10.md`](docs/stages-9-10.md).
 Phạm vi production simulation giai đoạn 11-15 nằm trong [`docs/stages-11-15.md`](docs/stages-11-15.md).
+VietQR, realtime matching, webhook SaaS, acquirer SPI và checklist External UAT nằm trong [`docs/stages-20-25.md`](docs/stages-20-25.md).
+Portal quản trị, SSE, mock alert, SDK và bộ test demo nằm trong [`docs/stage-26-demo-experience.md`](docs/stage-26-demo-experience.md).
 Ranh giới hardening và các blocker bên ngoài nằm trong [`docs/production-hardening.md`](docs/production-hardening.md).
 
 ---
