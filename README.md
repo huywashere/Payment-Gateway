@@ -1,6 +1,6 @@
-# Payment Gateway & FinTech Platform (Stripe & ApiPay Architecture)
+# NovaGate - Payment Gateway & FinTech Platform
 
-Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) được thiết kế theo tiêu chuẩn FinTech quốc tế (lấy cảm hứng từ kiến trúc cốt lõi của **Stripe** và giao diện ngân hàng mở **[ApiPay.vn](https://apipay.vn/)**).
+**NovaGate** là hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) được thiết kế theo tiêu chuẩn FinTech quốc tế, với kiến trúc xử lý thanh toán, sổ cái và merchant portal hiện đại.
 
 ---
 
@@ -30,7 +30,7 @@ Một hệ thống Cổng Thanh Toán Phân Tán (Distributed Payment Gateway) �
 
 6. **Next.js BFF & Prisma ORM:**
    - Frontend Next.js 16 tích hợp **Prisma ORM** kết nối trực tiếp vào PostgreSQL để truy vấn số dư và giao dịch thời gian thực.
-   - Giao diện Dark Mode Isometric Clone chuẩn thiết kế `apipay.vn` với bộ logo thương hiệu ngân hàng gốc được lưu cục bộ (MB, ACB, BIDV, VCB, TPBank...) và trình giả lập VietQR Napas 24/7.
+   - Giao diện NovaGate Dark Mode với bộ logo thương hiệu ngân hàng được lưu cục bộ (MB, ACB, BIDV, VCB, TPBank...) và trình giả lập VietQR Napas 24/7.
 
 7. **Merchant Platform & Sandbox Developer Experience:**
    - Onboarding merchant, scoped API key, rotate/revoke, audit log và quản lý webhook endpoint.

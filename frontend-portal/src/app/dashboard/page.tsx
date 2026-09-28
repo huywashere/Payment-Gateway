@@ -185,7 +185,7 @@ export default function DashboardPage() {
           <div className={styles.table}>
             <div className={styles.tableHead}><span>Giao dịch</span><span>Thời gian</span><span>Số tiền</span><span>Trạng thái</span></div>
             {transactions.length === 0 ? <div className={styles.empty}><CreditCard size={24} /><b>Chưa có giao dịch</b><span>Giao dịch sandbox mới sẽ xuất hiện tại đây.</span></div> : transactions.slice(0, 7).map((transaction) => <div className={styles.tableRow} key={transaction.id}>
-              <span><b>{transaction.description || 'Thanh toán ApiPay'}</b><small>{transaction.id.slice(0, 16)}...</small></span>
+              <span><b>{transaction.description || 'Thanh toán NovaGate'}</b><small>{transaction.id.slice(0, 16)}...</small></span>
               <span>{new Date(transaction.createdAt).toLocaleDateString('vi-VN')}<small>{new Date(transaction.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</small></span>
               <strong>{money.format(transaction.amount)}</strong>
               <Status status={transaction.status} />

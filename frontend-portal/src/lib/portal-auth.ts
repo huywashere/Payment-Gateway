@@ -1,4 +1,4 @@
-export const PORTAL_SESSION_COOKIE = 'apipay_portal_session';
+export const PORTAL_SESSION_COOKIE = 'novagate_portal_session';
 
 export type PortalRole = 'OWNER' | 'DEVELOPER' | 'FINANCE' | 'AUDITOR';
 

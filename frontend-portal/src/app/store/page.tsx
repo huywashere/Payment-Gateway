@@ -19,7 +19,7 @@ const PRODUCTS: Product[] = [
   {
     id: 'prod-headphones',
     name: 'Sony WH-1000XM5 Noise Canceling',
-    price: 7990000,
+    price: 79000,
     description: 'Tai nghe chống ồn không dây hàng đầu với 8 micro và bộ xử lý âm thanh V1 kép.',
     rating: 4.9,
     badge: 'Bán chạy nhất',
@@ -27,7 +27,7 @@ const PRODUCTS: Product[] = [
   {
     id: 'prod-keyboard',
     name: 'Keychron Q1 Pro Custom Keyboard',
-    price: 4490000,
+    price: 49000,
     description: 'Bàn phím cơ CNC Aluminum nguyên khối, Bluetooth 5.1 & firmware QMK/VIA.',
     rating: 4.8,
     badge: 'Hàng mới',
@@ -35,7 +35,7 @@ const PRODUCTS: Product[] = [
   {
     id: 'prod-mouse',
     name: 'Logitech MX Master 3S Performance',
-    price: 2290000,
+    price: 29000,
     description: 'Chuột công thái học cao cấp với con lăn siêu tốc MagSpeed và cảm biến 8000 DPI.',
     rating: 4.9,
     badge: 'Được đánh giá cao',
@@ -90,7 +90,7 @@ export default function DemoStorePage() {
           onMouseOver={(e) => (e.currentTarget.style.color = '#f5f5f7')}
           onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
         >
-          <ArrowLeft size={16} /> Quay về Trang chủ ApiPay
+          <ArrowLeft size={16} /> Quay về Trang chủ NovaGate
         </Link>
       </div>
 
@@ -112,7 +112,7 @@ export default function DemoStorePage() {
           }}
         >
           <ShoppingBag size={14} />
-          MÔ PHỎNG THỰC TẾ: E-COMMERCE TÍCH HỢP APIPAY CORE
+          MÔ PHỎNG THỰC TẾ: E-COMMERCE TÍCH HỢP NOVAGATE CORE
         </div>
 
         <h1
@@ -128,7 +128,7 @@ export default function DemoStorePage() {
           TechGear Vietnam Store
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.08rem', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
-          Bấm <strong>&quot;Mua ngay với ApiPay&quot;</strong> để trải nghiệm hành trình tạo đơn, thanh toán và theo dõi trạng thái giao dịch.
+          Bấm <strong>&quot;Mua ngay với NovaGate&quot;</strong> để trải nghiệm hành trình tạo đơn, thanh toán và theo dõi trạng thái giao dịch.
         </p>
       </div>
 
@@ -190,7 +190,7 @@ export default function DemoStorePage() {
             {/* Price & Action */}
             <div style={{ borderTop: '1px solid var(--border-frosted)', paddingTop: '20px' }}>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
-                Giá niêm yết
+                Giá demo sandbox
               </div>
               <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--mercury-gold)', marginBottom: '20px' }}>
                 {product.price.toLocaleString('vi-VN')} ₫
@@ -207,7 +207,7 @@ export default function DemoStorePage() {
                   <span>Đang khởi tạo cổng...</span>
                 ) : (
                   <>
-                    <span>Mua ngay với ApiPay</span>
+                    <span>Mua ngay với NovaGate</span>
                     <ArrowRight size={16} />
                   </>
                 )}

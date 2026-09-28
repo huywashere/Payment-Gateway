@@ -1,42 +1,31 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Copy,
   Check,
   Zap,
   ArrowRight,
-  Play,
-  Pause,
   CreditCard,
   QrCode,
   Building,
 } from 'lucide-react';
 
-import { AppiBotAvatar } from '@/components/PaymentIcons';
-import { AdyenMoneyMovementSection, AdyenPlatformsSection } from '@/components/AdyenShowcase';
-
-const CLIENT_BRANDS = [
-  'Toast',
-  'OpenAI',
-  'lululemon',
-  'ORACLE',
-  'Spotify',
-  'UNIQLO',
-  'The Coffee House',
-  'Shopee Mall',
-  'FPT Retail',
-];
+import { NovaBotAvatar } from '@/components/PaymentIcons';
+import { AdyenHero } from '@/components/AdyenHero';
+import { AdyenInteractiveShowcase } from '@/components/AdyenShowcase';
+import { BusinessModelsSection } from '@/components/BusinessModelsSection';
+import { CustomerStoriesShowcase } from '@/components/CustomerStoriesShowcase';
 
 export default function HomePage() {
   const [activeCliTab, setActiveCliTab] = useState<'npm' | 'unix' | 'win'>('npm');
   const [copiedCli, setCopiedCli] = useState(false);
   const [terminalRunning, setTerminalRunning] = useState(false);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
-
+  const [showConcierge, setShowConcierge] = useState(false);
   const [terminalLogs, setTerminalLogs] = useState<string[]>([
-    '$ apipay payment-intent:create --amount=500000 --currency=VND',
+    '$ novagate payment-intent:create --amount=500000 --currency=VND',
     '✓ Payment service initialized',
     '✓ Idempotency protection enabled',
     '✓ Financial ledger entry recorded',
@@ -49,6 +38,12 @@ export default function HomePage() {
     setCopiedCli(true);
     setTimeout(() => setCopiedCli(false), 2000);
   };
+
+  useEffect(() => {
+    const updateConcierge = () => setShowConcierge(window.scrollY > window.innerHeight * .72);
+    window.addEventListener('scroll', updateConcierge, { passive: true });
+    return () => window.removeEventListener('scroll', updateConcierge);
+  }, []);
 
   const runLiveTerminalTest = async () => {
     setTerminalRunning(true);
@@ -96,271 +91,11 @@ export default function HomePage() {
   };
 
   return (
-    <div style={{ backgroundColor: '#00112c', minHeight: '100vh', color: '#ffffff' }}>
-      {/* ========================================================================= */}
-      {/* 1. HERO BANNER: EXACT ADYEN VIDEO HERO (Matching Screenshot 2)            */}
-      {/* ========================================================================= */}
-      <section
-        className="adyen-hero"
-        style={{
-          position: 'relative',
-          width: '100%',
-          minHeight: '88vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          overflow: 'hidden',
-          backgroundColor: '#000000',
-        }}
-      >
-        {/* Background Video directly from Adyen's CDN */}
-        <video
-          id="hero-bg-video"
-          src="https://media.ffycdn.net/eu/adyen/tWdz1QtnMpB2yi7BNLam.mp4?format=mp4"
-          poster="https://media.ffycdn.net/eu/adyen/tWdz1QtnMpB2yi7BNLam.mp4?format=webp"
-          autoPlay
-          loop
-          muted
-          playsInline
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: 0.55,
-            zIndex: 0,
-          }}
-        />
-
-        {/* Ambient Dark Overlays matching Adyen */}
-        <div
-          className="adyen-hero-content"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'radial-gradient(ellipse at center, rgba(0, 17, 44, 0.4) 0%, rgba(0, 17, 44, 0.85) 100%)',
-            zIndex: 1,
-          }}
-        />
-
-        {/* Hero Content Container */}
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 2,
-            maxWidth: '900px',
-            margin: '0 auto',
-            padding: '80px 24px 60px 24px',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          {/* Spotlight Pill Badge (Matching Screenshot 2) */}
-          <Link
-            className="adyen-spotlight"
-            href="/dashboard"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.18)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              padding: '8px 18px',
-              borderRadius: '999px',
-              marginBottom: '28px',
-              transition: 'background 0.2s',
-            }}
-          >
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                backgroundColor: '#0abf53',
-                display: 'inline-block',
-                borderRadius: '1px',
-              }}
-            />
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontFamily: 'monospace',
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                color: '#0abf53',
-                textTransform: 'uppercase',
-              }}
-            >
-              THE SPOTLIGHT 2026
-            </span>
-            <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>—</span>
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontFamily: 'monospace',
-                color: '#ffffff',
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-              }}
-            >
-              ĐỘT PHÁ NỀN TẢNG THANH TOÁN DOANH NGHIỆP
-            </span>
-          </Link>
-
-          {/* Big Headline (Matching Screenshot 2) */}
-          <h1
-            className="adyen-hero-title"
-            id="hero-main-title"
-            style={{
-              fontSize: 'clamp(2.8rem, 5.5vw, 4.4rem)',
-              fontWeight: 700,
-              lineHeight: 1.1,
-              letterSpacing: '-0.03em',
-              color: '#ffffff',
-              marginBottom: '22px',
-            }}
-          >
-            Fintech you can bank on
-          </h1>
-
-          {/* Subtitle */}
-          <p
-            className="adyen-hero-subtitle"
-            style={{
-              fontSize: '1.2rem',
-              color: 'rgba(255, 255, 255, 0.75)',
-              lineHeight: 1.6,
-              maxWidth: '680px',
-              marginBottom: '36px',
-            }}
-          >
-            Một nền tảng duy nhất cho thanh toán, dữ liệu và sản phẩm tài chính. Xây dựng để mở rộng cùng các doanh nghiệp hàng đầu.
-          </p>
-
-          {/* Center CTA Button (Matching Screenshot 2: Talk to our team) */}
-          <div className="adyen-hero-actions" style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'center' }}>
-            <Link
-              href="/checkout"
-              id="btn-hero-talk"
-              style={{
-                backgroundColor: '#0abf53',
-                color: '#00112c',
-                fontWeight: 700,
-                fontSize: '0.98rem',
-                padding: '14px 32px',
-                borderRadius: '8px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                textDecoration: 'none',
-                transition: 'background-color 0.15s ease, transform 0.15s ease',
-                boxShadow: '0 4px 20px rgba(10, 191, 83, 0.35)',
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#00ff84';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = '#0abf53';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              <span>Tư vấn giải pháp ngay</span>
-              <ArrowRight size={16} />
-            </Link>
-
-            <Link
-              href="/store"
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                backdropFilter: 'blur(8px)',
-                color: '#ffffff',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                padding: '14px 26px',
-                borderRadius: '8px',
-                textDecoration: 'none',
-              }}
-            >
-              Trải nghiệm Cửa hàng Demo
-            </Link>
-          </div>
-        </div>
-
-        {/* Bottom Marquee of Client Logos (Matching Screenshot 2) */}
-        <div
-          className="adyen-client-strip"
-          style={{
-            position: 'relative',
-            zIndex: 2,
-            width: '100%',
-            borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-            padding: '20px 32px',
-            backgroundColor: 'rgba(0, 17, 44, 0.75)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div className="marquee-container" style={{ flex: 1 }}>
-            <div className="marquee-track">
-              {CLIENT_BRANDS.concat(CLIENT_BRANDS).map((brand, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    fontSize: '1.15rem',
-                    fontWeight: 800,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(255, 255, 255, 0.65)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  <span style={{ color: '#0abf53', fontSize: '0.8rem' }}>●</span>
-                  <span>{brand}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Pause / Play Video Indicator Icon */}
-          <button
-            type="button"
-            onClick={() => {
-              const vid = document.getElementById('hero-bg-video') as HTMLVideoElement | null;
-              if (vid) {
-                if (isVideoPlaying) vid.pause();
-                else vid.play();
-                setIsVideoPlaying(!isVideoPlaying);
-              }
-            }}
-            style={{
-              marginLeft: '24px',
-              padding: '8px',
-              borderRadius: '6px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              color: 'rgba(255, 255, 255, 0.7)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            title={isVideoPlaying ? 'Tạm dừng video' : 'Tiếp tục phát'}
-          >
-            {isVideoPlaying ? <Pause size={14} /> : <Play size={14} />}
-          </button>
-        </div>
-      </section>
+    <div className="novagate-home" style={{ backgroundColor: '#00112c', minHeight: '100vh', color: '#ffffff' }}>
+      {/* Hero video theo bố cục Adyen, dùng Framer Motion cho entrance và micro-interactions. */}
+      <AdyenHero />
+      {/* Mô hình vận hành linh hoạt, lấy cảm hứng từ bố cục lựa chọn của 2Checkout. */}
+      <BusinessModelsSection />
 
       {/* ========================================================================= */}
       {/* 2. SECTION MÀU TRẮNG: UNIFIED COMMERCE & 3 VALUE PILLARS (Clean White)    */}
@@ -584,7 +319,7 @@ export default function HomePage() {
           >
             <div style={{ maxWidth: '820px' }}>
               <p style={{ fontSize: '1.15rem', fontStyle: 'italic', color: '#00112c', lineHeight: 1.6, marginBottom: '12px' }}>
-                &ldquo;ApiPay giúp chúng tôi tự động hóa 100% dòng tiền chuyển khoản VietQR và xử lý đối soát tức thời, giải phóng hoàn toàn gánh nặng kế toán thủ công.&rdquo;
+                &ldquo;NovaGate giúp chúng tôi tự động hóa 100% dòng tiền chuyển khoản VietQR và xử lý đối soát tức thời, giải phóng hoàn toàn gánh nặng kế toán thủ công.&rdquo;
               </p>
               <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0abf53' }}>
                 TechStore Vietnam Corp • Đơn vị phân phối công nghệ hàng đầu
@@ -612,17 +347,12 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 3. PHẦN 1: QUẢ CẦU 3D & LUÂN CHUYỂN DÒNG TIỀN (Midnight Navy #00112c)      */}
       {/* ========================================================================= */}
-      <AdyenMoneyMovementSection />
-
-      {/* ========================================================================= */}
-      {/* 4. PHẦN 2: KIẾN TRÚC XẾP TẦNG 3D & NỀN TẢNG DOANH NGHIỆP (Clean White)   */}
-      {/* ========================================================================= */}
-      <AdyenPlatformsSection />
+      <AdyenInteractiveShowcase />
 
       {/* ========================================================================= */}
       {/* 4. SECTION SÁNG: HẠ TẦNG KỸ THUẬT & DEVELOPER TERMINAL (#f6f8fb)          */}
       {/* ========================================================================= */}
-      <section className="section-light reveal-on-scroll">
+      <section className="section-light developer-section reveal-on-scroll">
         <div style={{ maxWidth: '1360px', margin: '0 auto' }}>
           {/* Header */}
           <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 56px auto' }}>
@@ -716,6 +446,7 @@ export default function HomePage() {
 
           {/* Interactive Developer Terminal Running Live */}
           <div
+            className="developer-terminal"
             style={{
               background: '#041328',
               border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -741,7 +472,7 @@ export default function HomePage() {
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} />
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
                 <span style={{ marginLeft: '12px', color: '#8fa0be', fontFamily: 'monospace' }}>
-                  apipay-core-terminal • Port 8080 Live Runner
+                  novagate-core-terminal • Port 8080 Live Runner
                 </span>
               </div>
 
@@ -810,17 +541,17 @@ export default function HomePage() {
               }}
             >
               <code>
-                {activeCliTab === 'npm' && 'npm install -g apipay-gateway-cli'}
-                {activeCliTab === 'unix' && 'curl -fsSL https://apipay.vn/install.sh | bash'}
-                {activeCliTab === 'win' && 'iwr -useb https://apipay.vn/install.ps1 | iex'}
+                {activeCliTab === 'npm' && 'npm install -g novagate-cli'}
+                {activeCliTab === 'unix' && 'curl -fsSL https://novagate.local/install.sh | bash'}
+                {activeCliTab === 'win' && 'iwr -useb https://novagate.local/install.ps1 | iex'}
               </code>
               <button
                 type="button"
                 onClick={() =>
                   copyCommand(
                     activeCliTab === 'npm'
-                      ? 'npm install -g apipay-gateway-cli'
-                      : 'curl -fsSL https://apipay.vn/install.sh | bash'
+                      ? 'npm install -g novagate-cli'
+                      : 'curl -fsSL https://novagate.local/install.sh | bash'
                   )
                 }
                 style={{ color: copiedCli ? '#0abf53' : '#64748b', cursor: 'pointer' }}
@@ -900,13 +631,21 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Customer-story carousel ngay trước footer. */}
+      <CustomerStoriesShowcase />
+
       {/* Floating Concierge Chatbot */}
-      <div
+      <AnimatePresence>
+      {showConcierge ? <motion.div
         className="floating-bot"
         id="adyen-concierge-widget"
+        initial={{ opacity: 0, y: 18, scale: .94 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: .96 }}
+        transition={{ duration: .32, ease: [0.16, 1, 0.3, 1] }}
         onClick={() =>
           alert(
-            'ApiPay sandbox đang hoạt động. Bạn có thể thử tạo giao dịch, Payment Link, webhook và vòng đời thanh toán ngay trên máy local.'
+            'NovaGate sandbox đang hoạt động. Bạn có thể thử tạo giao dịch, Payment Link, webhook và vòng đời thanh toán ngay trên máy local.'
           )
         }
         style={{
@@ -925,16 +664,17 @@ export default function HomePage() {
           zIndex: 100,
         }}
       >
-        <AppiBotAvatar size={34} />
+        <NovaBotAvatar size={34} />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontSize: '0.65rem', color: '#0abf53', letterSpacing: '0.08em', fontWeight: 700 }}>
-            APIPAY CONCIERGE
+            NOVAGATE CONCIERGE
           </span>
           <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#ffffff' }}>
             Hỗ trợ kỹ thuật 24/7
           </span>
         </div>
-      </div>
+      </motion.div> : null}
+      </AnimatePresence>
     </div>
   );
 }

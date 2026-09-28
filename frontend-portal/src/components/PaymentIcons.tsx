@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function ApipayBrandLogo({ size = 28 }: { size?: number }) {
+export function NovaGateBrandLogo({ size = 28 }: { size?: number }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
       <svg
@@ -56,7 +56,7 @@ export function ApipayBrandLogo({ size = 28 }: { size?: number }) {
               lineHeight: 1.1,
             }}
           >
-            APIPAY
+            NOVAGATE
           </span>
           <span
             style={{
@@ -89,7 +89,7 @@ export function ApipayBrandLogo({ size = 28 }: { size?: number }) {
   );
 }
 
-export function AppiBotAvatar({ size = 36 }: { size?: number }) {
+export function NovaBotAvatar({ size = 36 }: { size?: number }) {
   return (
     <div
       style={{

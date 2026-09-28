@@ -1,6 +1,6 @@
 param(
     [string]$PortalUrl = "http://localhost:3000",
-    [string]$Email = "owner@apipay.local",
+    [string]$Email = "owner@novagate.local",
     [string]$Password = "ProjectDemo!2026",
     [string]$MfaCode = "246810"
 )

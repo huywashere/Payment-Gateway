@@ -92,7 +92,7 @@ export default function PaymentLinkClient({ slug }: { slug: string }) {
     <section className={styles.shell}>
       <div className={styles.checkout}>
         <aside className={styles.summary}>
-          <div className={styles.brand}><span>apipay</span><i>PAYMENT LINK</i></div>
+          <div className={styles.brand}><span>novagate</span><i>PAYMENT LINK</i></div>
           <div className={styles.merchant}><Landmark size={18} /><span><small>Thanh toán cho</small><b>{link.accountName}</b></span></div>
           <div className={styles.total}><small>Tổng thanh toán</small><strong>{money.format(link.amount)}</strong><p>{link.description}</p></div>
           <div className={styles.secure}><ShieldCheck size={18} /><span><b>Bảo vệ giao dịch</b><small>Mã QR riêng biệt, tự động đối soát theo nội dung chuyển khoản.</small></span></div>

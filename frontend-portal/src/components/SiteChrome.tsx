@@ -34,7 +34,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="site-shell">
       <AdyenHeader />
-      <PortalSessionBadge />
+      {pathname !== '/' ? <PortalSessionBadge /> : null}
       <main>{children}</main>
       <AdyenFooter />
     </div>

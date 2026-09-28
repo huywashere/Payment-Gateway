@@ -229,7 +229,7 @@ func (s *server) publish(payload []byte) {
 }
 func (s *server) handleMetrics(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
-	fmt.Fprintf(w, "apipay_ingest_accepted_total %d\napipay_ingest_rejected_total %d\napipay_ingest_queue_full_total %d\napipay_ingest_succeeded_total %d\napipay_ingest_failed_total %d\napipay_ingest_queue_depth %d\napipay_ingest_queue_capacity %d\napipay_realtime_clients %d\n", s.metrics.accepted.Load(), s.metrics.rejected.Load(), s.metrics.queueFull.Load(), s.metrics.succeeded.Load(), s.metrics.failed.Load(), len(s.jobs), cap(s.jobs), s.clientCount())
+	fmt.Fprintf(w, "novagate_ingest_accepted_total %d\nnovagate_ingest_rejected_total %d\nnovagate_ingest_queue_full_total %d\nnovagate_ingest_succeeded_total %d\nnovagate_ingest_failed_total %d\nnovagate_ingest_queue_depth %d\nnovagate_ingest_queue_capacity %d\nnovagate_realtime_clients %d\n", s.metrics.accepted.Load(), s.metrics.rejected.Load(), s.metrics.queueFull.Load(), s.metrics.succeeded.Load(), s.metrics.failed.Load(), len(s.jobs), cap(s.jobs), s.clientCount())
 }
 func (s *server) clientCount() int { s.mu.RLock(); defer s.mu.RUnlock(); return len(s.subscribers) }
 

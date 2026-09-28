@@ -1,3 +1,3 @@
-module apipay.local/infra-gateway
+module novagate.local/infra-gateway
 
 go 1.24

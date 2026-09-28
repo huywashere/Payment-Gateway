@@ -12,11 +12,11 @@ function Login([string]$Email) {
     return $session
 }
 
-$owner = Login 'owner@apipay.local'
+$owner = Login 'owner@novagate.local'
 $ownerSession = Invoke-RestMethod -Uri "$PortalUrl/api/auth/session" -WebSession $owner
 if ($ownerSession.session.role -ne 'OWNER') { throw 'Owner session was not created.' }
 
-$developer = Login 'developer@apipay.local'
+$developer = Login 'developer@novagate.local'
 $denied = $false
 try {
     Invoke-WebRequest -Method Post -Uri "$PortalUrl/api/gateway/v1/payouts" -WebSession $developer `

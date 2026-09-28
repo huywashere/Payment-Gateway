@@ -150,11 +150,11 @@ export function MerchantPortalShell({ children }: { children: React.ReactNode })
   }, [allowedNavigation, query]);
 
   const currentTitle = Object.entries(PAGE_TITLES).find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] || 'Merchant Portal';
-  const initials = session?.email.slice(0, 2).toUpperCase() || 'AP';
+  const initials = session?.email.slice(0, 2).toUpperCase() || 'NG';
 
   const toggleCollapsed = () => {
     setCollapsed((current) => {
-      window.localStorage.setItem('apipay-sidebar-collapsed', String(!current));
+      window.localStorage.setItem('novagate-sidebar-collapsed', String(!current));
       return !current;
     });
   };
@@ -193,9 +193,9 @@ export function MerchantPortalShell({ children }: { children: React.ReactNode })
       {mobileOpen && <button type="button" className={styles.overlay} onClick={() => setMobileOpen(false)} aria-label="Đóng menu" />}
       <aside className={`${styles.sidebar} ${mobileOpen ? styles.mobileOpen : ''}`}>
         <div className={styles.brandRow}>
-          <Link href="/dashboard" className={styles.brand} aria-label="ApiPay Merchant Portal">
-            <span className={styles.brandMark}>A</span>
-            <span className={styles.brandCopy}><b>ApiPay</b><small>Merchant Portal</small></span>
+          <Link href="/dashboard" className={styles.brand} aria-label="NovaGate Merchant Portal">
+            <span className={styles.brandMark}>N</span>
+            <span className={styles.brandCopy}><b>NovaGate</b><small>Merchant Portal</small></span>
           </Link>
           <button type="button" className={styles.closeMobile} onClick={() => setMobileOpen(false)} aria-label="Đóng menu"><X size={19} /></button>
         </div>

@@ -4,7 +4,7 @@ import './globals.css';
 import { SiteChrome } from '@/components/SiteChrome';
 
 export const metadata: Metadata = {
-  title: 'ApiPay | Unified Payments & Financial Technology Platform',
+  title: 'NovaGate | Unified Payments & Financial Technology Platform',
   description: 'Hạ tầng thanh toán, dữ liệu và sản phẩm tài chính hợp nhất cho doanh nghiệp hiện đại.',
 };
 

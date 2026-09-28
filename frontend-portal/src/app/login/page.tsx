@@ -6,7 +6,7 @@ import { KeyRound, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('owner@apipay.local');
+  const [email, setEmail] = useState('owner@novagate.local');
   const [password, setPassword] = useState('ProjectDemo!2026');
   const [mfaCode, setMfaCode] = useState('246810');
   const [error, setError] = useState('');
@@ -40,7 +40,7 @@ export default function LoginPage() {
       <form className="portal-login-card" onSubmit={submit}>
         <div className="portal-login-icon"><ShieldCheck size={30} /></div>
         <p className="portal-kicker">SECURE MERCHANT PORTAL</p>
-        <h1>Đăng nhập ApiPay</h1>
+        <h1>Đăng nhập NovaGate</h1>
         <p className="portal-login-copy">Sandbox hỗ trợ tài khoản demo; môi trường live bắt buộc OIDC và MFA thật.</p>
         {authMode === 'demo' && <>
           <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></label>
@@ -50,7 +50,7 @@ export default function LoginPage() {
         {error && <p className="portal-login-error">{error}</p>}
         {authMode === 'demo' && <>
           <button className="btn-adyen-green" disabled={busy}><KeyRound size={17} />{busy ? 'Đang xác thực…' : 'Đăng nhập an toàn'}</button>
-          <small>Demo: owner/developer/finance/auditor@apipay.local</small>
+          <small>Demo: owner/developer/finance/auditor@novagate.local</small>
         </>}
         {authMode === 'oidc' && <a className="btn-adyen-green" href="/api/auth/oidc/login">
           <KeyRound size={17} />Đăng nhập bằng Identity Provider

@@ -18,7 +18,7 @@
 - Bounded queue trả `503` + `Retry-After` khi đầy; worker pool forward callback sang Gateway Core và retry tối đa ba lần.
 - `GET /v1/realtime/events` fan-out SSE; `POST /v1/realtime/publish` phát sự kiện đã ký.
 - `/healthz`, `/readyz`, `/metrics` phục vụ container health và Prometheus.
-- Dashboard Grafana `ApiPay Infra Gateway` theo dõi availability, queue depth, callback throughput và số kết nối SSE; Alertmanager cảnh báo edge down hoặc forward thất bại.
+- Dashboard Grafana `NovaGate Infra Gateway` theo dõi availability, queue depth, callback throughput và số kết nối SSE; Alertmanager cảnh báo edge down hoặc forward thất bại.
 
 Go chỉ gánh phần I/O đồng thời cao. Java Core/PostgreSQL vẫn là nguồn sự thật duy nhất cho idempotency, matching, ledger và settlement.
 

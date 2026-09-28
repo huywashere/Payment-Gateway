@@ -8,10 +8,10 @@ type OidcDiscovery = {
   issuer: string;
 };
 
-export const OIDC_STATE_COOKIE = 'apipay_oidc_state';
-export const OIDC_NONCE_COOKIE = 'apipay_oidc_nonce';
-export const OIDC_VERIFIER_COOKIE = 'apipay_oidc_verifier';
-export const OIDC_RETURN_COOKIE = 'apipay_oidc_return';
+export const OIDC_STATE_COOKIE = 'novagate_oidc_state';
+export const OIDC_NONCE_COOKIE = 'novagate_oidc_nonce';
+export const OIDC_VERIFIER_COOKIE = 'novagate_oidc_verifier';
+export const OIDC_RETURN_COOKIE = 'novagate_oidc_return';
 
 export function requiredOidcConfig() {
   const issuer = process.env.PORTAL_OIDC_ISSUER?.replace(/\/$/, '');

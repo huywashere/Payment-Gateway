@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Move3d } from 'lucide-react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 /**
  * =================================================================================
@@ -28,13 +30,16 @@ export function AdyenParticleDome() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Track scroll elevation relative to footer
+    // Track assembly progress across the whole footer. The footer is the final
+    // viewport-sized section, so using the canvas bounds would never let the
+    // animation reach 100% before the document hits its scroll limit.
     const handleScroll = () => {
       if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
+      const footer = containerRef.current.closest('.adyen-site-footer');
+      const rect = (footer ?? containerRef.current).getBoundingClientRect();
       const vh = window.innerHeight;
-      // Calculate how far into footer user has scrolled (0 to 1)
-      const progress = Math.min(Math.max((vh - rect.top) / (vh * 0.7), 0), 1);
+      // 0 when the footer first enters the viewport, 1 when it fills it.
+      const progress = Math.min(Math.max((vh - rect.top) / vh, 0), 1);
       scrollElevation.current = progress;
     };
 
@@ -71,6 +76,8 @@ export function AdyenParticleDome() {
       opacity: number;
       phase: number;
       ringIndex: number;
+      scatterX: number;
+      scatterY: number;
     }
 
     let particles: Particle[] = [];
@@ -97,15 +104,17 @@ export function AdyenParticleDome() {
           const py = cy + r * Math.sin(a) * 0.68;
 
           if (py > -20 && py < h + 80 && px > -40 && px < w + 40) {
-            const isGreen = (ring % 5 === 0 && i % 7 === 0) || (ring % 7 === 0 && i % 5 === 0);
-            const size = isGreen ? 2.8 : ring % 3 === 0 ? 1.9 : 1.3;
+            const isGreen = false;
+            const size = isGreen ? 2.8 : ring > 16 ? 2.15 : ring % 3 === 0 ? 1.85 : 1.35;
             const baseOpacity = isGreen ? 0.95 : 0.2 + (Math.sin(i * 3 + ring) + 1) * 0.35;
+            const scatterX = Math.sin(i * 12.17 + ring * 7.31) * (95 + ring * 3.2) + (px - cx) * .16;
+            const scatterY = 82 + Math.abs(Math.cos(i * 5.71 + ring * 9.13)) * 112;
 
             particles.push({
               origX: px,
               origY: py,
-              x: px,
-              y: py + 80, // initially lower, rises with scroll
+              x: px + scatterX,
+              y: py + scatterY,
               vx: 0,
               vy: 0,
               r: size,
@@ -113,6 +122,8 @@ export function AdyenParticleDome() {
               opacity: baseOpacity,
               phase: Math.random() * Math.PI * 2,
               ringIndex: ring,
+              scatterX,
+              scatterY,
             });
           }
         }
@@ -142,13 +153,14 @@ export function AdyenParticleDome() {
 
       // Smooth scroll elevation lerp (Adyen scrollYProgress)
       currentElev += (scrollElevation.current - currentElev) * 0.08;
-      const elevationOffset = (1 - currentElev) * 90;
+      const mergeProgress = currentElev * currentElev * (3 - 2 * currentElev);
+      const scatterProgress = 1 - mergeProgress;
 
       const cx = w / 2;
       // Ambient radial dome glow rising from the bottom center
       const domeGlow = ctx.createRadialGradient(cx, h, 20, cx, h, 650);
-      domeGlow.addColorStop(0, 'rgba(10, 191, 83, 0.16)');
-      domeGlow.addColorStop(0.35, 'rgba(0, 209, 106, 0.06)');
+      domeGlow.addColorStop(0, 'rgba(88, 111, 136, 0.14)');
+      domeGlow.addColorStop(0.35, 'rgba(64, 86, 112, 0.06)');
       domeGlow.addColorStop(0.7, 'rgba(0, 17, 44, 0.02)');
       domeGlow.addColorStop(1, 'rgba(0, 17, 44, 0)');
       ctx.fillStyle = domeGlow;
@@ -163,9 +175,9 @@ export function AdyenParticleDome() {
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // Target position based on scroll elevation
-        const targetY = p.origY + elevationOffset;
-        const targetX = p.origX;
+        // Each point begins dispersed, then converges into the final hemisphere.
+        const targetX = p.origX + p.scatterX * scatterProgress;
+        const targetY = p.origY + p.scatterY * scatterProgress;
 
         // Magnetic Attraction
         if (mouseActive) {
@@ -193,20 +205,18 @@ export function AdyenParticleDome() {
 
         // Starry twinkling opacity
         const twinkle = Math.sin(time * 2 + p.phase) * 0.2;
-        const currentOpacity = Math.max(0.1, Math.min(1.0, p.opacity + twinkle));
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        const assemblyOpacity = .42 + mergeProgress * .58;
+        const currentOpacity = Math.max(0.08, Math.min(1.0, (p.opacity + twinkle) * assemblyOpacity));
 
         if (p.isGreen) {
           ctx.fillStyle = '#00ff84';
           ctx.shadowColor = '#00ff84';
           ctx.shadowBlur = 8;
-          ctx.fill();
+          ctx.fillRect(p.x - p.r / 2, p.y - p.r / 2, p.r * 1.5, p.r * 1.5);
           ctx.shadowBlur = 0;
         } else {
-          ctx.fillStyle = `rgba(255, 255, 255, ${currentOpacity})`;
-          ctx.fill();
+          ctx.fillStyle = `rgba(112, 136, 160, ${currentOpacity * .82})`;
+          ctx.fillRect(p.x - p.r / 2, p.y - p.r / 2, p.r * 1.55, p.r * 1.55);
         }
       }
 
@@ -215,13 +225,13 @@ export function AdyenParticleDome() {
       const glyphX = cx + Math.sin(time * 0.5) * 40;
       const glyphY = h - 160 + Math.cos(time * 0.7) * 15 - (currentElev * 30);
 
-      ctx.fillStyle = 'rgba(0, 255, 132, 0.75)';
+      ctx.fillStyle = 'rgba(112, 136, 160, 0.58)';
       ctx.font = 'bold 9px monospace';
-      ctx.fillText('■ π, 1) N*(S • NAPAS 24/7', glyphX + 60, glyphY);
+      ctx.fillText('S&#[?].2.1', glyphX + 60, glyphY);
 
       ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.font = '8px monospace';
-      ctx.fillText('∑ APIPAY VIRTUAL THREADS CORE', glyphX - 220, glyphY + 25);
+      ctx.fillText('∑ NOVAGATE VIRTUAL THREADS CORE', glyphX - 220, glyphY + 25);
 
       // Bottom metallic horizon arc
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
@@ -246,6 +256,7 @@ export function AdyenParticleDome() {
   return (
     <div
       ref={containerRef}
+      className="adyen-footer-dome"
       style={{
         position: 'relative',
         width: '100%',
@@ -266,7 +277,7 @@ export function AdyenParticleDome() {
           width: '100%',
           height: '100%',
           display: 'block',
-          cursor: 'crosshair',
+          cursor: 'default',
         }}
       />
     </div>
@@ -1389,10 +1400,128 @@ export function AdyenPlatformsSection() {
  * Backward compatibility wrapper if needed
  */
 export function AdyenInteractiveShowcase() {
+  const rootRef = useRef<HTMLElement | null>(null);
+  const pinRef = useRef<HTMLDivElement | null>(null);
+  const moneySceneRef = useRef<HTMLDivElement | null>(null);
+  const platformSceneRef = useRef<HTMLDivElement | null>(null);
+  const progressRef = useRef<HTMLSpanElement | null>(null);
+  const storyScrollRef = useRef<{ start: number; end: number } | null>(null);
+  const [activeTier, setActiveTier] = useState(1);
+
+  useLayoutEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+    const media = gsap.matchMedia();
+    const context = gsap.context(() => {
+      media.add('(min-width: 901px) and (prefers-reduced-motion: no-preference)', () => {
+        gsap.set(platformSceneRef.current, { autoAlpha: 0, y: 46, scale: .985, pointerEvents: 'none' });
+        gsap.set(progressRef.current, { scaleY: 0, transformOrigin: 'top' });
+
+        const timeline = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: {
+            trigger: rootRef.current,
+            pin: pinRef.current,
+            start: 'top top',
+            end: '+=155%',
+            scrub: .85,
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
+            snap: {
+              snapTo: [0, 1],
+              delay: .08,
+              duration: { min: .18, max: .42 },
+              ease: 'power2.inOut',
+            },
+          },
+        });
+
+        storyScrollRef.current = timeline.scrollTrigger || null;
+        timeline
+          .to(progressRef.current, { scaleY: 1, duration: 1 }, 0)
+          .to(moneySceneRef.current, { autoAlpha: 0, y: -38, scale: .985, pointerEvents: 'none', duration: .34 }, .31)
+          .to(platformSceneRef.current, { autoAlpha: 1, y: 0, scale: 1, pointerEvents: 'auto', duration: .38 }, .48);
+
+        return () => {
+          storyScrollRef.current = null;
+          timeline.scrollTrigger?.kill();
+          timeline.kill();
+        };
+      });
+
+      media.add('(max-width: 900px), (prefers-reduced-motion: reduce)', () => {
+        gsap.set([moneySceneRef.current, platformSceneRef.current, progressRef.current], { clearProps: 'all' });
+      });
+    }, rootRef);
+
+    return () => {
+      media.revert();
+      context.revert();
+    };
+  }, []);
+
+  const goToScene = (scene: 0 | 1) => {
+    const trigger = storyScrollRef.current;
+    if (!trigger) {
+      (scene === 0 ? moneySceneRef.current : platformSceneRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const progress = scene === 0 ? .04 : .93;
+    window.scrollTo({ top: trigger.start + (trigger.end - trigger.start) * progress, behavior: 'smooth' });
+  };
+
   return (
-    <>
-      <AdyenMoneyMovementSection />
-      <AdyenPlatformsSection />
-    </>
+    <section ref={rootRef} id="platform-story" className="adyen-product-story" aria-label="Nền tảng NovaGate">
+      <div ref={pinRef} className="adyen-product-story-pin">
+        <div className="adyen-story-rail" aria-hidden="true">
+          <b>1</b><span><i ref={progressRef} /></span><b>2</b>
+        </div>
+
+        <div ref={moneySceneRef} className="adyen-story-scene adyen-story-money">
+          <div className="adyen-story-visual"><AdyenGlobeOrbital /></div>
+          <div className="adyen-story-panel-stack">
+            <article className="adyen-story-panel">
+              <span className="adyen-story-kicker">INTELLIGENT MONEY MOVEMENT</span>
+              <div className="adyen-story-copy">
+                <h2>Luân chuyển dòng tiền xuyên suốt doanh nghiệp</h2>
+                <p>Tối ưu doanh thu bằng thanh toán hợp nhất và chi trả tự động. Tiếp nhận, đối soát và điều chuyển nguồn vốn trên cùng một nền tảng.</p>
+                <Link href="/dashboard">Khám phá luồng tiền thông minh <ArrowRight size={17} /></Link>
+              </div>
+              <div className="adyen-story-usecases">
+                <span>TRƯỜNG HỢP SỬ DỤNG</span>
+                <Link href="/checkout">Chấp nhận thanh toán <ArrowRight size={15} /></Link>
+                <Link href="/operations">Chi trả và giải ngân tự động <ArrowRight size={15} /></Link>
+                <Link href="/store">Thanh toán đa kênh <ArrowRight size={15} /></Link>
+              </div>
+            </article>
+            <button type="button" className="adyen-story-collapsed" onClick={() => goToScene(1)}>
+              NOVAGATE FOR PLATFORMS <span>+</span>
+            </button>
+          </div>
+        </div>
+
+        <div ref={platformSceneRef} className="adyen-story-scene adyen-story-platform">
+          <div className="adyen-story-visual"><AdyenIsometricStack activeTier={activeTier} onHoverTier={setActiveTier} /></div>
+          <div className="adyen-story-panel-stack">
+            <button type="button" className="adyen-story-collapsed" onClick={() => goToScene(0)}>
+              INTELLIGENT MONEY MOVEMENT <span>+</span>
+            </button>
+            <article className="adyen-story-panel">
+              <span className="adyen-story-kicker">NOVAGATE FOR PLATFORMS</span>
+              <div className="adyen-story-copy">
+                <h2>Khởi chạy thanh toán và sản phẩm tài chính dưới thương hiệu riêng</h2>
+                <p>Mở khóa nguồn doanh thu mới. Nhúng thanh toán, tài khoản, phát hành thẻ và cấp vốn kinh doanh chỉ với một lần tích hợp.</p>
+                <Link href="/dashboard">Khám phá tài chính nhúng <ArrowRight size={17} /></Link>
+              </div>
+              <div className="adyen-story-usecases">
+                <span>TRƯỜNG HỢP SỬ DỤNG</span>
+                <Link href="/checkout" onMouseEnter={() => setActiveTier(1)}>Thanh toán nhúng <ArrowRight size={15} /></Link>
+                <Link href="/dashboard" onMouseEnter={() => setActiveTier(2)}>Tài trợ vốn doanh nghiệp <ArrowRight size={15} /></Link>
+                <Link href="/dashboard" onMouseEnter={() => setActiveTier(3)}>Tài khoản và thẻ doanh nghiệp <ArrowRight size={15} /></Link>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

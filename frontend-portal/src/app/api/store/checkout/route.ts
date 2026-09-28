@@ -1,9 +1,9 @@
 import { portalMode } from '@/lib/portal-auth';
 
 const PRODUCTS = {
-  'prod-headphones': { amount: 7_990_000, name: 'Sony WH-1000XM5 Noise Canceling' },
-  'prod-keyboard': { amount: 4_490_000, name: 'Keychron Q1 Pro Custom Keyboard' },
-  'prod-mouse': { amount: 2_290_000, name: 'Logitech MX Master 3S Performance' },
+  'prod-headphones': { amount: 79_000, name: 'Sony WH-1000XM5 Noise Canceling' },
+  'prod-keyboard': { amount: 49_000, name: 'Keychron Q1 Pro Custom Keyboard' },
+  'prod-mouse': { amount: 29_000, name: 'Logitech MX Master 3S Performance' },
 } as const;
 
 type ProductId = keyof typeof PRODUCTS;

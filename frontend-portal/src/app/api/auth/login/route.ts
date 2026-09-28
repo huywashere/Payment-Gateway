@@ -5,10 +5,10 @@ type Attempt = { count: number; resetAt: number };
 const attempts = new Map<string, Attempt>();
 
 const DEMO_USERS: Record<string, PortalRole> = {
-  'owner@apipay.local': 'OWNER',
-  'developer@apipay.local': 'DEVELOPER',
-  'finance@apipay.local': 'FINANCE',
-  'auditor@apipay.local': 'AUDITOR',
+  'owner@novagate.local': 'OWNER',
+  'developer@novagate.local': 'DEVELOPER',
+  'finance@novagate.local': 'FINANCE',
+  'auditor@novagate.local': 'AUDITOR',
 };
 
 function configuredCredential(name: string, developmentValue: string) {

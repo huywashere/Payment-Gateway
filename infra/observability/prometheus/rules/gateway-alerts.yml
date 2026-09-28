@@ -121,7 +121,7 @@ groups:
           description: Processor failures have exceeded the configured operating threshold.
 
       - alert: PaymentGatewayIngestFailures
-        expr: increase(apipay_ingest_failed_total{job="infra-gateway"}[5m]) > 0
+        expr: increase(novagate_ingest_failed_total{job="infra-gateway"}[5m]) > 0
         for: 1m
         labels:
           severity: warning
@@ -131,7 +131,7 @@ groups:
           description: One or more signed bank callbacks could not be delivered to Gateway Core.
 
       - alert: PaymentGatewayIngestQueueSaturated
-        expr: apipay_ingest_queue_depth / clamp_min(apipay_ingest_queue_capacity, 1) > 0.8
+        expr: novagate_ingest_queue_depth / clamp_min(novagate_ingest_queue_capacity, 1) > 0.8
         for: 2m
         labels:
           severity: warning
@@ -141,7 +141,7 @@ groups:
           description: Increase workers or investigate Gateway Core latency before the edge starts rejecting callbacks.
 
       - alert: PaymentGatewayIngestQueueRejected
-        expr: increase(apipay_ingest_queue_full_total{job="infra-gateway"}[5m]) > 0
+        expr: increase(novagate_ingest_queue_full_total{job="infra-gateway"}[5m]) > 0
         for: 1m
         labels:
           severity: critical

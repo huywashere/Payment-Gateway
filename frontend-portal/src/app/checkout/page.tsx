@@ -260,7 +260,7 @@ function CheckoutContent() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--adyen-green-neon)', fontSize: '0.8rem', fontWeight: 700, marginBottom: '20px' }}>
               <ShieldCheck size={16} />
-              <span>APIPAY SECURE CHECKOUT</span>
+              <span>NOVAGATE SECURE CHECKOUT</span>
             </div>
 
             <span style={{ fontSize: '0.86rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
@@ -631,7 +631,7 @@ function CheckoutContent() {
 
                   <Image
                     id="img-vietqr-code"
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=247PAY_${selectedBank}_${amount}_APIPAY8821`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=247PAY_${selectedBank}_${amount}_NOVAGATE8821`}
                     alt="VietQR Code"
                     width={200}
                     height={200}
@@ -705,7 +705,7 @@ function CheckoutContent() {
                     <span style={{ color: 'var(--text-dim)' }}>Nội dung chuyển khoản:</span>
                     <button
                       type="button"
-                      onClick={() => copyToClipboard('APIPAY ORD8821', 'memo')}
+                      onClick={() => copyToClipboard('NOVAGATE ORD8821', 'memo')}
                       style={{
                         background: 'rgba(251, 191, 36, 0.15)',
                         border: '1px solid rgba(251, 191, 36, 0.3)',
@@ -719,7 +719,7 @@ function CheckoutContent() {
                         gap: '6px',
                       }}
                     >
-                      APIPAY ORD8821
+                      NOVAGATE ORD8821
                       {copiedField === 'memo' ? <Check size={14} color="var(--adyen-green-neon)" /> : <Copy size={14} />}
                     </button>
                   </div>

@@ -21,7 +21,7 @@
       "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
       "id": 2,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "expr": "apipay_ingest_queue_depth", "refId": "A" }],
+      "targets": [{ "expr": "novagate_ingest_queue_depth", "refId": "A" }],
       "title": "Ingest queue depth",
       "type": "stat"
     },
@@ -32,10 +32,10 @@
       "id": 3,
       "options": { "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
-        { "expr": "rate(apipay_ingest_accepted_total[5m])", "legendFormat": "accepted/s", "refId": "A" },
-        { "expr": "rate(apipay_ingest_succeeded_total[5m])", "legendFormat": "forwarded/s", "refId": "B" },
-        { "expr": "rate(apipay_ingest_failed_total[5m])", "legendFormat": "failed/s", "refId": "C" },
-        { "expr": "rate(apipay_ingest_rejected_total[5m])", "legendFormat": "rejected/s", "refId": "D" }
+        { "expr": "rate(novagate_ingest_accepted_total[5m])", "legendFormat": "accepted/s", "refId": "A" },
+        { "expr": "rate(novagate_ingest_succeeded_total[5m])", "legendFormat": "forwarded/s", "refId": "B" },
+        { "expr": "rate(novagate_ingest_failed_total[5m])", "legendFormat": "failed/s", "refId": "C" },
+        { "expr": "rate(novagate_ingest_rejected_total[5m])", "legendFormat": "rejected/s", "refId": "D" }
       ],
       "title": "Signed callback throughput",
       "type": "timeseries"
@@ -46,18 +46,18 @@
       "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
       "id": 4,
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
-      "targets": [{ "expr": "apipay_realtime_clients", "refId": "A" }],
+      "targets": [{ "expr": "novagate_realtime_clients", "refId": "A" }],
       "title": "Realtime SSE clients",
       "type": "stat"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 42,
-  "tags": ["apipay", "go", "ingest", "realtime"],
+  "tags": ["novagate", "go", "ingest", "realtime"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
   "timezone": "browser",
-  "title": "ApiPay Infra Gateway",
-  "uid": "apipay-infra-gateway",
+  "title": "NovaGate Infra Gateway",
+  "uid": "novagate-infra-gateway",
   "version": 1
 }

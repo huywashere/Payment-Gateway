@@ -9,7 +9,7 @@
 - Sandbox login uses the project MFA code. Live mode requires OIDC Authorization Code + PKCE and an MFA claim.
 - OWNER, DEVELOPER, FINANCE and AUDITOR permissions are enforced again inside the BFF.
 
-Local demo credentials are `owner@apipay.local`, `developer@apipay.local`, `finance@apipay.local` and `auditor@apipay.local`, with the password and MFA code from the environment example. Production mode has no credential fallback.
+Local demo credentials are `owner@novagate.local`, `developer@novagate.local`, `finance@novagate.local` and `auditor@novagate.local`, with the password and MFA code from the environment example. Production mode has no credential fallback.
 
 ## Stage 12 - Bank sandbox SPI
 
