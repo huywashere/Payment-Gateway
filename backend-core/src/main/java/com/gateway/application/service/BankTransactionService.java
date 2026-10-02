@@ -46,6 +46,12 @@ public class BankTransactionService {
         BankAccountEntity account = accountRepository.findForUpdateById(request.getBankAccountId())
                 .orElseThrow(() -> new IllegalArgumentException("Bank account not found"));
         if (!bank.name().equals(account.getBankCode())) throw new IllegalArgumentException("Bank account does not match callback bank");
+        return ingestDirect(account, request, rawPayload);
+    }
+
+    @Transactional
+    public BankTransactionResponse ingestDirect(BankAccountEntity account, BankTransactionIngestRequest request,
+                                                String rawPayload) {
         String payloadHash = sha256(rawPayload);
         BankTransactionEntity duplicate = transactionRepository
                 .findByBankAccountIdAndExternalReference(account.getId(), request.getExternalReference()).orElse(null);
@@ -66,7 +72,7 @@ public class BankTransactionService {
         if ("IN".equals(transaction.getDirection())) match(transaction, account);
         else transaction.setMatchStatus("UNMATCHED");
         transactionRepository.save(transaction);
-        auditService.record(account.getMerchantId(), "BANK_CALLBACK", bank.name(), "bank_transaction.received",
+        auditService.record(account.getMerchantId(), "BANK_CALLBACK", account.getBankCode(), "bank_transaction.received",
                 "bank_transaction", transaction.getId().toString(), Map.of("match_status", transaction.getMatchStatus()));
         return response(transaction, account.getBankCode());
     }

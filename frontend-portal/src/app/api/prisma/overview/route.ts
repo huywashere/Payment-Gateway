@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { portfolioPrismaOverview } from '@/lib/portfolio-demo';
 
 export async function GET() {
+  if (process.env.PORTFOLIO_DEMO_MODE === 'true') {
+    return NextResponse.json(portfolioPrismaOverview(), { headers: { 'cache-control': 'no-store', 'x-novagate-demo': 'portfolio' } });
+  }
   try {
     const [merchant, intentsCount, recentIntents, outboxCount, recentDeliveries] = await Promise.all([
       prisma.merchant.findFirst({

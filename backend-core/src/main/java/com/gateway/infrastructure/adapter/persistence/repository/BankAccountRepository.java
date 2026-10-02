@@ -14,6 +14,7 @@ public interface BankAccountRepository extends JpaRepository<BankAccountEntity, 
     List<BankAccountEntity> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
     Optional<BankAccountEntity> findByIdAndMerchantId(UUID id, UUID merchantId);
     Optional<BankAccountEntity> findFirstByMerchantIdAndDefaultAccountTrueAndStatus(UUID merchantId, String status);
+    Optional<BankAccountEntity> findFirstByAccountNumberAndStatus(String accountNumber, String status);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<BankAccountEntity> findForUpdateById(UUID id);
     long countByMerchantIdAndStatusNot(UUID merchantId, String status);

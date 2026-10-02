@@ -37,6 +37,15 @@ export async function POST(request: Request) {
   }
 
   const product = PRODUCTS[productId as ProductId];
+  if (process.env.PORTFOLIO_DEMO_MODE === 'true') {
+    return Response.json({
+      id: crypto.randomUUID(),
+      clientSecret: `pi_demo_${crypto.randomUUID().replaceAll('-', '')}_secret_portfolio`,
+      amount: product.amount,
+      currency: 'VND',
+      status: 'REQUIRES_PAYMENT_METHOD',
+    }, { headers: { 'cache-control': 'no-store', 'x-novagate-demo': 'portfolio' } });
+  }
   const coreUrl = (process.env.GATEWAY_CORE_URL || 'http://localhost:8080').replace(/\/$/, '');
   const secretKey = (process.env.GATEWAY_SANDBOX_SECRET_KEY || process.env.GATEWAY_DEMO_SECRET_KEY)?.trim();
   if (!secretKey) {

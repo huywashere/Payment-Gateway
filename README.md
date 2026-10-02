@@ -71,6 +71,12 @@
    - Bank Hub, billing/invoice CSV, lịch sử subscription và audit log có lọc/export trong portal.
    - Go edge nhận callback có HMAC + replay window, bounded queue, worker pool/retry, SSE fan-out và Prometheus metrics.
 
+14. **Open Banking Ingest & E-Commerce Ecosystem:**
+   - Ingest biến động số dư ngân hàng thật qua SePay và PayOS với cơ chế tự động khớp mã thanh toán (`paymentCode`), nhận tiền thật trực tiếp vào tài khoản ngân hàng không cần giấy phép trung gian thanh toán.
+   - Giám sát thời gian thực với Telegram Webhook Alert Worker cảnh báo Dead Letter Queue tức thời.
+   - Tích hợp trọn vẹn làm cổng thanh toán chính trên Sàn TMĐT TITAN TECH (`E-com-project`) với popup VietQR tương tác động.
+   - Cung cấp bộ Postman API Collection tự động sinh `Idempotency-Key` và script `scripts/bootstrap-dev.ps1` khởi động 1-click.
+
 ---
 
 ## 🛠 Tech Stack

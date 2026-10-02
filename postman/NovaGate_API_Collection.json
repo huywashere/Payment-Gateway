@@ -1,0 +1,253 @@
+{
+  "info": {
+    "name": "NovaGate Payment Gateway API",
+    "_postman_id": "novagate-api-collection-v1",
+    "description": "Comprehensive API collection for NovaGate Payment Gateway & FinTech Platform.\nIncludes automatic HMAC-SHA256 signing, Idempotency-Key generation, and Open Banking Webhooks.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_key}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.request.headers.has('Idempotency-Key')) {",
+          "    pm.request.headers.add({",
+          "        key: 'Idempotency-Key',",
+          "        value: 'idemp_' + pm.variables.replaceIn('{{$guid}}')",
+          "    });",
+          "}",
+          "pm.variables.set('current_time_epoch', Math.floor(Date.now() / 1000));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Health & Edge Diagnostics",
+      "item": [
+        {
+          "name": "Gateway Core Actuator Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{base_url}}/actuator/health"
+          }
+        },
+        {
+          "name": "Go Edge Healthz",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{edge_url}}/healthz"
+          }
+        },
+        {
+          "name": "Go Edge Readyz & Queue Depth",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{edge_url}}/readyz"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Payment Intents (FSM)",
+      "item": [
+        {
+          "name": "Create Payment Intent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.environment.set('intent_id', jsonData.id);",
+                  "    console.log('Saved intent_id:', jsonData.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 150000,\n  \"currency\": \"VND\",\n  \"description\": \"Đơn hàng chuột công thái học Titan Tech\"\n}"
+            },
+            "url": "{{base_url}}/v1/payment_intents"
+          }
+        },
+        {
+          "name": "Get Payment Intent",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/v1/payment_intents/{{intent_id}}"
+          }
+        },
+        {
+          "name": "Confirm Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethodId\": \"pm_card_visa_sandbox\"\n}"
+            },
+            "url": "{{base_url}}/v1/payment_intents/{{intent_id}}/confirm"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. VietQR & Payment Links",
+      "item": [
+        {
+          "name": "Create VietQR Payment Link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.environment.set('payment_link_id', jsonData.id);",
+                  "    pm.environment.set('payment_link_slug', jsonData.slug);",
+                  "    pm.environment.set('payment_code', jsonData.paymentCode);",
+                  "    console.log('Created VietQR link:', jsonData.slug, 'Code:', jsonData.paymentCode);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 120000,\n  \"currency\": \"VND\",\n  \"description\": \"Thanh toán đơn hàng TITAN-WEB-7788\",\n  \"expiresInMinutes\": 30\n}"
+            },
+            "url": "{{base_url}}/v1/payment_links"
+          }
+        },
+        {
+          "name": "Get Public Payment Link Info (Customer View)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{base_url}}/v1/payment_links/public/{{payment_link_slug}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Real Bank & Open Banking Webhooks",
+      "item": [
+        {
+          "name": "Simulate SePay Real Bank Webhook",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Apikey demo-sepay-token" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{$randomInt}},\n  \"gateway\": \"ACB\",\n  \"transactionDate\": \"2026-10-02 20:00:00\",\n  \"accountNumber\": \"1234566688\",\n  \"amountIn\": 120000,\n  \"amountOut\": 0,\n  \"transactionContent\": \"{{payment_code}} chuyen khoan mua ban phim\",\n  \"referenceNumber\": \"FT2610_{{$randomInt}}\"\n}"
+            },
+            "url": "{{base_url}}/v1/open_banking/webhook/sepay"
+          }
+        },
+        {
+          "name": "Simulate PayOS Real Bank Webhook",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"00\",\n  \"desc\": \"success\",\n  \"data\": {\n    \"orderCode\": {{$randomInt}},\n    \"amount\": 120000,\n    \"description\": \"{{payment_code}}\",\n    \"accountNumber\": \"1234566688\",\n    \"reference\": \"PAYOS_{{$randomInt}}\",\n    \"transactionDateTime\": \"2026-10-02 20:00:00\",\n    \"currency\": \"VND\"\n  }\n}"
+            },
+            "url": "{{base_url}}/v1/open_banking/webhook/payos"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Ledger & Balance & Analytics",
+      "item": [
+        {
+          "name": "Get Account Balance (Double-Entry)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/v1/balance"
+          }
+        },
+        {
+          "name": "Get Dashboard Overview Analytics (SSE snapshot)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/v1/dashboard/overview?days=30"
+          }
+        },
+        {
+          "name": "List Portal Notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/v1/notifications"
+          }
+        },
+        {
+          "name": "Mark All Notifications Read",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/v1/notifications/read-all"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Refunds & Reversals",
+      "item": [
+        {
+          "name": "Create Refund",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000,\n  \"reason\": \"REQUESTED_BY_CUSTOMER\"\n}"
+            },
+            "url": "{{base_url}}/v1/charges/{{intent_id}}/refunds"
+          }
+        }
+      ]
+    }
+  ]
+}

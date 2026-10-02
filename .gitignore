@@ -37,6 +37,7 @@ evidence/production/*
 .settings/
 .DS_Store
 .visual-check/
+.deploy-sources/
 Thumbs.db
 
 # Logs

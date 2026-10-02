@@ -1,4 +1,5 @@
 import { portalMode, roleCanAccess, sessionTokenFromCookie, verifyPortalSession, type PortalRole } from '@/lib/portal-auth';
+import { portfolioGatewayResponse } from '@/lib/portfolio-demo';
 
 const PUBLIC_CHECKOUT_PATH = /^v1\/checkout\/[A-Za-z0-9_-]+(?:\/pay)?$/;
 const SANDBOX_CHECKOUT_PATH = /^v1\/checkout\/[A-Za-z0-9_-]+\/sandbox\/(?:complete|action)$/;
@@ -56,7 +57,7 @@ function getServerConfig() {
     ? process.env.GATEWAY_LIVE_SECRET_KEY?.trim()
     : (process.env.GATEWAY_SANDBOX_SECRET_KEY || process.env.GATEWAY_DEMO_SECRET_KEY)?.trim();
 
-  if (process.env.NODE_ENV === 'production' && (!coreUrl || !secretKey)) {
+  if (process.env.NODE_ENV === 'production' && process.env.PORTFOLIO_DEMO_MODE !== 'true' && (!coreUrl || !secretKey)) {
     throw new Error('Missing gateway URL or environment-specific secret key');
   }
   if (mode === 'live' && secretKey?.startsWith('sk_test_')) {
@@ -117,6 +118,9 @@ async function proxyToCore(request: Request, context: RouteContext<'/api/gateway
       }
     }
   }
+
+  const portfolioResponse = await portfolioGatewayResponse(pathname, request);
+  if (portfolioResponse) return portfolioResponse;
 
   const headers = new Headers();
   const contentType = request.headers.get('content-type');
