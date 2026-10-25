@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:25-jdk-alpine AS builder
 
 WORKDIR /workspace/backend-core
 COPY backend-core/.mvn .mvn
@@ -9,7 +9,7 @@ RUN chmod +x mvnw && ./mvnw -B -DskipTests dependency:go-offline
 COPY backend-core/src src
 RUN ./mvnw -B -DskipTests package
 
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:25-jre-alpine AS runtime
 
 RUN addgroup -S gateway && adduser -S gateway -G gateway
 WORKDIR /app

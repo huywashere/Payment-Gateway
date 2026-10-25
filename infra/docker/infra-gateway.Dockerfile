@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src
 COPY services/infra-gateway/go.mod ./
 COPY services/infra-gateway/cmd ./cmd
