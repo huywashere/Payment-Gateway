@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.7
-FROM node:22-alpine AS dependencies
+FROM node:26-alpine AS dependencies
 
 WORKDIR /workspace/frontend-portal
 COPY frontend-portal/package.json frontend-portal/package-lock.json ./
 RUN npm ci
 
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /workspace/frontend-portal
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -21,7 +21,7 @@ COPY frontend-portal/src ./src
 COPY frontend-portal/next.config.ts frontend-portal/tsconfig.json frontend-portal/eslint.config.mjs ./
 RUN npm run build
 
-FROM node:22-alpine AS runtime
+FROM node:26-alpine AS runtime
 
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs \
